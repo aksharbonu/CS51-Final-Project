@@ -27,15 +27,23 @@ module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
 	    	result;;
 
 	    let add m1 m2 =
-	    	let row = Array.length m1 in
-	    	let col = Array.length m1.(0) in 
-	    	if row = Array.length m2 && col = Array.length m2.(0) then
-	    		(let result = zero row col in
-	    		for i = 0 to row - 1 do
-	    			for j = 0 to col - 1 do
-	    				result.(i).(j) <- M.add m1.(i).(j) m2.(i).(j)
-	    			done;
-	    		done;
-	    		result)
-	    	else raise IncompatibleDimensions;;
+	    	do_operation m1 m2 M.add
+
+	    let sub m1 m2 = 
+	    	do_operation m1 m2 M.sub 
+
+	    let do_operation m1 m2 operation = 
+		    let row = Array.length m1 in
+		    	let col = Array.length m1.(0) in 
+		    	if row = Array.length m2 && col = Array.length m2.(0) then
+		    		(let result = zero row col in
+		    		for i = 0 to row - 1 do
+		    			for j = 0 to col - 1 do
+		    				result.(i).(j) <- operation m1.(i).(j) m2.(i).(j)
+		    			done;
+		    		done;
+		    		result)
+		    	else raise IncompatibleDimensions;;
+
+    	let scalar : elt -> t -> t
 	end

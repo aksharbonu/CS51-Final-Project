@@ -9,6 +9,8 @@ sig
     val zero : int -> int -> t
     val identity : int -> t
     val add : t -> t -> t
+    val sub : t -> t -> t
+    val scalar : elt -> t -> t
     val mul : t -> t -> t
     val det : t -> int
     val inverse : t -> t

@@ -4,6 +4,7 @@ module type Ring =
         val zero : t
         val one : t
         val add : t -> t -> t
+        val sub : t -> t -> t
         val mul : t -> t -> t
         val div : t -> t -> t
     end
@@ -14,6 +15,7 @@ module IntRing =
         let zero = 0
         let one = 1
         let add = (+)
+        let sub = (-)
         let mul = ( * )         
         let div = (/)   
     end;;
@@ -24,6 +26,7 @@ module FloatRing =
         let zero = 0.
         let one = 1.
         let add = (+.)
+        let sub = (-)
         let mul = ( *. )
         let div = (/.)
     end
