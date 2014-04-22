@@ -1,9 +1,3 @@
-let add m1 m2 =
-        do_operation m1 m2 M.add;;
-
-let sub m1 m2 = 
-        do_operation m1 m2 M.sub;;
-
 let do_operation m1 m2 operation = 
     let row = Array.length m1 in
     let col = Array.length m1.(0) in 
@@ -16,6 +10,12 @@ let do_operation m1 m2 operation =
         done;
         result)
     else raise IncompatibleDimensions;;
+
+let add m1 m2 =
+        do_operation m1 m2 M.add;;
+
+let sub m1 m2 = 
+        do_operation m1 m2 M.sub;;
 
     (* TODO *)
     (* Check if they can multiply *)
