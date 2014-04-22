@@ -39,7 +39,7 @@ let join parent child row col =
     done;;
 
 let rec mul_invariant matrix1 matrix2 =
-    let row = Array.length m1 in
+    let row = Array.length matrix1 in
     let result = zero row row in
     if row = 1 then 
         (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
@@ -98,7 +98,7 @@ let rec mul_invariant matrix1 matrix2 =
         let c11 = add (sub (add m1 m4) m5) m7 in
         let c12 = add m3 m5 in
         let c21 = add m2 m4 in
-        let c22 = add (sub (add m1 M3) m2) m6 in 
+        let c22 = add (sub (add m1 m3) m2) m6 in 
 
         join result c11 0 0; 
         join result c12 0 dim; 
@@ -106,6 +106,6 @@ let rec mul_invariant matrix1 matrix2 =
         join result c22 dim dim;
 
         result;;
-        
+
 let mul m1 m2 =
     mul_invariant m1 m2;; 
