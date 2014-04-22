@@ -1,11 +1,11 @@
-Open Matrix
-Open Math
+open Matrix
+open Math
 
 module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
 	struct
-		Open Strassen
-		Open LU 
-		Open GaussianElimination
+		open Strassen
+		open LU 
+		open GaussianElimination
 
 		exception IncompatibleDimensions
 
