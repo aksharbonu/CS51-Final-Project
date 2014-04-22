@@ -1,26 +1,29 @@
-module type MATH =
+module type Ring =
     sig
         type t
         val zero : t
         val one : t
         val add : t -> t -> t
         val mul : t -> t -> t
+        val div : t -> t -> t
     end
 
-module IntMath = 
+module IntRing = 
     struct 
         type t = int
         let zero = 0
         let one = 1
         let add = (+)
-        let mul = ( * )            
+        let mul = ( * )         
+        let div = (/)   
     end;;
 
-module FloatMath =
+module FloatRing =
     struct
         type t = float
         let zero = 0.
         let one = 1.
         let add = (+.)
         let mul = ( *. )
+        let div = (/.)
     end

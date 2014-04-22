@@ -1,5 +1,5 @@
 open Matrix
-open Math
+open Ring
 
 module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
 	struct
