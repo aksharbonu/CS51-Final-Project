@@ -45,13 +45,13 @@ module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
 	    		result)
 	    	else raise IncompatibleDimensions;;
 
-    	let scalar val m1 =
+    	let scalar value m1 =
     		let row = Array.length m1 in
 	    	let col = Array.length m1.(0) in 
 	    	let result = zero row col in
 	    		for i = 0 to row - 1 do
 	    			for j = 0 to col - 1 do
-	    				result.(i).(j) <- M.mul m1.(i).(j) val
+	    				result.(i).(j) <- M.mul m1.(i).(j) value
 	    			done;
 	    		done;
 	    		result
