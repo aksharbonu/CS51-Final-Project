@@ -87,10 +87,10 @@ let rec mul_invariant m1 m2 =
         let C21 = add M2 M4 in
         let C22 = add (sub (add M1 M3) M2) M6 in 
 
-        join C11 result 0 0; 
-        join C12 result 0 dim; 
-        join C21 result dim 0; 
-        join C22 result dim dim;
+        join result C11 0 0; 
+        join result C12 0 dim; 
+        join result C21 dim 0; 
+        join result C22 dim dim;
 
         result;;
 
