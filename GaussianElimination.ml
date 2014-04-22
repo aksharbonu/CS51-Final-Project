@@ -21,8 +21,14 @@ let solve (m : Matrix) (b : array) =
                 m.(j).(p) <- m.(j).(p) - alpha * m.(i).(p)
             done;
         done;    
-
     done; 
+
+    for i = rows - 1 downto 0 do
+        let sum = 0.0 in
+        for j = i + 1 to rows - 1 do
+            sum = sum + a.(i).(j) *  
+        done;
+    done;
 
 (* JAVA CODE TEMPLATE
 // Gaussian elimination with partial pivoting
