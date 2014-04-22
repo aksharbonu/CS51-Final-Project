@@ -1,150 +1,112 @@
-(* TODO 
+let add m1 m2 =
+        do_operation m1 m2 M.add;;
 
-	/**
- ** Java Program to Implement Strassen Algorithm
- **/
- 
-import java.util.Scanner;
- 
-/** Class Strassen **/
-public class Strassen
-{
-    /** Function to multiply matrices **/
-    public int[][] multiply(int[][] A, int[][] B)
-    {        
-        int n = A.length;
-        int[][] R = new int[n][n];
-        /** base case **/
-        if (n == 1)
-            R[0][0] = A[0][0] * B[0][0];
-        else
-        {
-            int[][] A11 = new int[n/2][n/2];
-            int[][] A12 = new int[n/2][n/2];
-            int[][] A21 = new int[n/2][n/2];
-            int[][] A22 = new int[n/2][n/2];
-            int[][] B11 = new int[n/2][n/2];
-            int[][] B12 = new int[n/2][n/2];
-            int[][] B21 = new int[n/2][n/2];
-            int[][] B22 = new int[n/2][n/2];
- 
-            /** Dividing matrix A into 4 halves **/
-            split(A, A11, 0 , 0);
-            split(A, A12, 0 , n/2);
-            split(A, A21, n/2, 0);
-            split(A, A22, n/2, n/2);
-            /** Dividing matrix B into 4 halves **/
-            split(B, B11, 0 , 0);
-            split(B, B12, 0 , n/2);
-            split(B, B21, n/2, 0);
-            split(B, B22, n/2, n/2);
- 
-            /** 
-              M1 = (A11 + A22)(B11 + B22)
-              M2 = (A21 + A22) B11
-              M3 = A11 (B12 - B22)
-              M4 = A22 (B21 - B11)
-              M5 = (A11 + A12) B22
-              M6 = (A21 - A11) (B11 + B12)
-              M7 = (A12 - A22) (B21 + B22)
-            **/
- 
-            int [][] M1 = multiply(add(A11, A22), add(B11, B22));
-            int [][] M2 = multiply(add(A21, A22), B11);
-            int [][] M3 = multiply(A11, sub(B12, B22));
-            int [][] M4 = multiply(A22, sub(B21, B11));
-            int [][] M5 = multiply(add(A11, A12), B22);
-            int [][] M6 = multiply(sub(A21, A11), add(B11, B12));
-            int [][] M7 = multiply(sub(A12, A22), add(B21, B22));
- 
-            /**
-              C11 = M1 + M4 - M5 + M7
-              C12 = M3 + M5
-              C21 = M2 + M4
-              C22 = M1 - M2 + M3 + M6
-            **/
-            int [][] C11 = add(sub(add(M1, M4), M5), M7);
-            int [][] C12 = add(M3, M5);
-            int [][] C21 = add(M2, M4);
-            int [][] C22 = add(sub(add(M1, M3), M2), M6);
- 
-            /** join 4 halves into one result matrix **/
-            join(C11, R, 0 , 0);
-            join(C12, R, 0 , n/2);
-            join(C21, R, n/2, 0);
-            join(C22, R, n/2, n/2);
-        }
-        /** return result **/    
-        return R;
-    }
-    /** Funtion to sub two matrices **/
-    public int[][] sub(int[][] A, int[][] B)
-    {
-        int n = A.length;
-        int[][] C = new int[n][n];
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                C[i][j] = A[i][j] - B[i][j];
-        return C;
-    }
-    /** Funtion to add two matrices **/
-    public int[][] add(int[][] A, int[][] B)
-    {
-        int n = A.length;
-        int[][] C = new int[n][n];
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                C[i][j] = A[i][j] + B[i][j];
-        return C;
-    }
-    /** Funtion to split parent matrix into child matrices **/
-    public void split(int[][] P, int[][] C, int iB, int jB) 
-    {
-        for(int i1 = 0, i2 = iB; i1 < C.length; i1++, i2++)
-            for(int j1 = 0, j2 = jB; j1 < C.length; j1++, j2++)
-                C[i1][j1] = P[i2][j2];
-    }
-    /** Funtion to join child matrices intp parent matrix **/
-    public void join(int[][] C, int[][] P, int iB, int jB) 
-    {
-        for(int i1 = 0, i2 = iB; i1 < C.length; i1++, i2++)
-            for(int j1 = 0, j2 = jB; j1 < C.length; j1++, j2++)
-                P[i2][j2] = C[i1][j1];
-    }    
-    /** Main function **/
-    public static void main (String[] args) 
-    {
-        Scanner scan = new Scanner(System.in);
-        System.out.println("Strassen Multiplication Algorithm Test\n");
-        /** Make an object of Strassen class **/
-        Strassen s = new Strassen();
- 
-        System.out.println("Enter order n :");
-        int N = scan.nextInt();
-        /** Accept two 2d matrices **/
-        System.out.println("Enter N order matrix 1\n");
-        int[][] A = new int[N][N];
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < N; j++)
-                A[i][j] = scan.nextInt();
- 
-        System.out.println("Enter N order matrix 2\n");
-        int[][] B = new int[N][N];
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < N; j++)
-                B[i][j] = scan.nextInt();
- 
-        int[][] C = s.multiply(A, B);
- 
-        System.out.println("\nProduct of matrices A and  B : ");
-        for (int i = 0; i < N; i++)
-        {
-            for (int j = 0; j < N; j++)
-                System.out.print(C[i][j] +" ");
-            System.out.println();
-        }
- 
-    }
-}
+let sub m1 m2 = 
+        do_operation m1 m2 M.sub;;
 
-*)
+let do_operation m1 m2 operation = 
+    let row = Array.length m1 in
+    let col = Array.length m1.(0) in 
+    if row = Array.length m2 && col = Array.length m2.(0) then
+        (let result = zero row col in
+        for i = 0 to row - 1 do
+            for j = 0 to col - 1 do
+                result.(i).(j) <- operation m1.(i).(j) m2.(i).(j)
+            done;
+        done;
+        result)
+    else raise IncompatibleDimensions;;
+
+    (* TODO *)
+    (* Check if they can multiply *)
+    (* If they can, pad them if necessary *)
+    (* Remove padding using split *)
+
+let mul m1 m2 =
+    mul_invariant m1 m2;; 
+
+let rec mul_invariant m1 m2 =
+    let row = Array.length m1 in
+    let result = zero row row in
+    if row = 1 then 
+        (result.(0).(0) = M.mul m1.(0).(0) m2.(0).(0); result)
+    else
+        let dim = row / 2 in
+
+        (* Create halves *)
+
+        let a11 = zero dim dim in
+        let a12 = zero dim dim in
+        let a21 = zero dim dim in
+        let a22 = zero dim dim in
+        let b11 = zero dim dim in
+        let b12 = zero dim dim in
+        let b21 = zero dim dim in
+        let b22 = zero dim dim in
+
+        (* Split m1 *)
+        split m1 a11 0 0; 
+        split m1 a12 0 dim; 
+        split m1 a21 dim 0; 
+        split m1 a22 dim dim; 
+
+        (* Split m2 *)
+
+        split m2 b11 0 0; 
+        split m2 b12 0 dim; 
+        split m2 b21 dim 0; 
+        split m2 b22 dim dim; 
+
+        (*
+              M1 = (a11 + a22)(b11 + b22)
+              M2 = (a21 + a22) b11
+              M3 = a11 (b12 - b22)
+              M4 = a22 (b21 - b11)
+              M5 = (a11 + a12) b22
+              M6 = (a21 - a11) (b11 + b12)
+              M7 = (a12 - a22) (b21 + b22)
+        *)
+
+        let M1 = mul_invariant (add a11 a22) (add b11 b22) in 
+        let M2 = mul_invariant (add a21 a22) b11 in 
+        let M3 = mul_invariant a11 (sub b12 b22) in
+        let M4 = mul_invariant a22 (sub b21 b11) in
+        let M5 = mul_invariant (add a11 a12) b22 in
+        let M6 = mul_invariant (add a21 a11) (add b11 b12) in
+        let M7 = mul_invariant (sub a12 a22) (add b21 b22) in
+
+        (*
+          C11 = M1 + M4 - M5 + M7
+          C12 = M3 + M5
+          C21 = M2 + M4
+          C22 = M1 - M2 + M3 + M6
+        *) 
+
+        let C11 = add (sub (add M1 M4) M5) M7 in
+        let C12 = add M3 M5 in
+        let C21 = add M2 M4 in
+        let C22 = add (sub (add M1 M3) M2) M6 in 
+
+        join C11 result 0 0; 
+        join C12 result 0 dim; 
+        join C21 result dim 0; 
+        join C22 result dim dim;
+
+        result;;
+
+
+let split parent child row col = 
+    let end = Array.length child - 1 in
+    for i = 0 to end do
+        for j = 0 to end do
+            child.(i).(j) <- parent.(i + row).(j + col)
+        done;
+    done;;
+
+let join parent child row col = 
+    let end = Array.length child - 1 in
+    for i = 0 to end do
+        for j = 0 to end do
+            parent.(i + row).(j + col) <- child.(i).(j) 
+        done;
+    done;; 
