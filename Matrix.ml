@@ -7,8 +7,7 @@ sig
     val of_array: elt array array -> t
     val to_array: t -> elt array array
     val zero : int -> int -> t
-    val identity : int -> int -> t
-    val of_list : elt list list -> t
+    val identity : int -> t
     val add : t -> t -> t
     val mul : t -> t -> t
     val det : t -> int
