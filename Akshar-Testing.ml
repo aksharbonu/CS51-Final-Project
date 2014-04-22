@@ -75,12 +75,6 @@ module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
 	    	done;
 	    	result;;
 
-	    let add m1 m2 =
-        do_operation m1 m2 M.add;;
-
-let sub m1 m2 = 
-        do_operation m1 m2 M.sub;;
-
 let do_operation m1 m2 operation = 
     let row = Array.length m1 in
     let col = Array.length m1.(0) in 
@@ -94,19 +88,38 @@ let do_operation m1 m2 operation =
         result)
     else raise IncompatibleDimensions;;
 
+let add m1 m2 =
+        do_operation m1 m2 M.add;;
+
+let sub m1 m2 = 
+        do_operation m1 m2 M.sub;;
+
     (* TODO *)
     (* Check if they can multiply *)
     (* If they can, pad them if necessary *)
     (* Remove padding using split *)
 
-let mul m1 m2 =
-    mul_invariant m1 m2;; 
+let split parent child row col = 
+    let last = Array.length child - 1 in
+    for i = 0 to last do
+        for j = 0 to last do
+            child.(i).(j) <- parent.(i + row).(j + col)
+        done;
+    done;;
 
-let rec mul_invariant m1 m2 =
-    let row = Array.length m1 in
+let join parent child row col = 
+    let last = Array.length child - 1 in
+    for i = 0 to last do
+        for j = 0 to last do
+            parent.(i + row).(j + col) <- child.(i).(j) 
+        done;
+    done;;
+
+let rec mul_invariant matrix1 matrix2 =
+    let row = Array.length matrix1 in
     let result = zero row row in
     if row = 1 then 
-        (result.(0).(0) = M.mul m1.(0).(0) m2.(0).(0); result)
+        (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
     else
         let dim = row / 2 in
 
@@ -121,18 +134,18 @@ let rec mul_invariant m1 m2 =
         let b21 = zero dim dim in
         let b22 = zero dim dim in
 
-        (* Split m1 *)
-        split m1 a11 0 0; 
-        split m1 a12 0 dim; 
-        split m1 a21 dim 0; 
-        split m1 a22 dim dim; 
+        (* Split matrix 1 *)
+        split matrix1 a11 0 0; 
+        split matrix1 a12 0 dim; 
+        split matrix1 a21 dim 0; 
+        split matrix1 a22 dim dim; 
 
         (* Split m2 *)
 
-        split m2 b11 0 0; 
-        split m2 b12 0 dim; 
-        split m2 b21 dim 0; 
-        split m2 b22 dim dim; 
+        split matrix2 b11 0 0; 
+        split matrix2 b12 0 dim; 
+        split matrix2 b21 dim 0; 
+        split matrix2 b22 dim dim; 
 
         (*
               M1 = (a11 + a22)(b11 + b22)
@@ -144,13 +157,13 @@ let rec mul_invariant m1 m2 =
               M7 = (a12 - a22) (b21 + b22)
         *)
 
-        let M1 = mul_invariant (add a11 a22) (add b11 b22) in 
-        let M2 = mul_invariant (add a21 a22) b11 in 
-        let M3 = mul_invariant a11 (sub b12 b22) in
-        let M4 = mul_invariant a22 (sub b21 b11) in
-        let M5 = mul_invariant (add a11 a12) b22 in
-        let M6 = mul_invariant (add a21 a11) (add b11 b12) in
-        let M7 = mul_invariant (sub a12 a22) (add b21 b22) in
+        let m1 = mul_invariant (add a11 a22) (add b11 b22) in 
+        let m2 = mul_invariant (add a21 a22) b11 in 
+        let m3 = mul_invariant a11 (sub b12 b22) in
+        let m4 = mul_invariant a22 (sub b21 b11) in
+        let m5 = mul_invariant (add a11 a12) b22 in
+        let m6 = mul_invariant (sub a21 a11) (add b11 b12) in
+        let m7 = mul_invariant (sub a12 a22) (add b21 b22) in
 
         (*
           C11 = M1 + M4 - M5 + M7
@@ -159,34 +172,20 @@ let rec mul_invariant m1 m2 =
           C22 = M1 - M2 + M3 + M6
         *) 
 
-        let C11 = add (sub (add M1 M4) M5) M7 in
-        let C12 = add M3 M5 in
-        let C21 = add M2 M4 in
-        let C22 = add (sub (add M1 M3) M2) M6 in 
+        let c11 = add (sub (add m1 m4) m5) m7 in
+        let c12 = add m3 m5 in
+        let c21 = add m2 m4 in
+        let c22 = add (sub (add m1 m3) m2) m6 in 
 
-        join C11 result 0 0; 
-        join C12 result 0 dim; 
-        join C21 result dim 0; 
-        join C22 result dim dim;
+        join result c11 0 0; 
+        join result c12 0 dim; 
+        join result c21 dim 0; 
+        join result c22 dim dim;
 
         result;;
 
-
-let split parent child row col = 
-    let end = Array.length child - 1 in
-    for i = 0 to end do
-        for j = 0 to end do
-            child.(i).(j) <- parent.(i + row).(j + col)
-        done;
-    done;;
-
-let join parent child row col = 
-    let end = Array.length child - 1 in
-    for i = 0 to end do
-        for j = 0 to end do
-            parent.(i + row).(j + col) <- child.(i).(j) 
-        done;
-    done;; 
+let mul m1 m2 =
+    mul_invariant m1 m2;; 
 
     	let scalar value m1 =
     		let row = Array.length m1 in

@@ -26,13 +26,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 	    	done;
 	    	result;;
 
-	    let add m1 m2 =
-	    	do_operation m1 m2 M.add
-
-	    let sub m1 m2 = 
-	    	do_operation m1 m2 M.sub 
-
-	    let do_operation m1 m2 operation = 
+    	let do_operation m1 m2 operation = 
 	    	let row = Array.length m1 in
 	    	let col = Array.length m1.(0) in 
 	    	if row = Array.length m2 && col = Array.length m2.(0) then
@@ -45,6 +39,12 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 	    		result)
 	    	else raise IncompatibleDimensions;;
 
+	    let add m1 m2 =
+	    	do_operation m1 m2 M.add
+
+	    let sub m1 m2 = 
+	    	do_operation m1 m2 M.sub 
+	    	
     	let scalar value m1 =
     		let row = Array.length m1 in
 	    	let col = Array.length m1.(0) in 
