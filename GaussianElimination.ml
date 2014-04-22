@@ -1,4 +1,28 @@
 (* TODO *)
+let solve (m : Matrix) (b : array) =
+    let length = b.length in
+    for i = 0 in length - 1 do
+        let max = i in
+        for j = i + 1 in length - 1 do
+            if (abs m.(j).(i)) > (abs m.(max).(i)) then max = i
+        done;
+
+        let temp_row = m.(i) in
+            m.(i) <- m.(max);
+            m.(max) <- temp_row;
+        let temp_b = b.(i) in
+            b.(i) <- b.(max);
+            b.(max) <- temp_b;
+
+        for j = i + 1 in length - 1 do
+            let alpha = (Float.of_int m.(j).(i)) / m.(i).(i) in
+            b.(j) <- b.(j) - alpha * b.(i)
+            for p = i to length - 1 do
+                m.(j).(p) <- m.(j).(p) - alpha * m.(i).(p)
+            done;
+        done;    
+
+    done; 
 
 (* JAVA CODE TEMPLATE
 // Gaussian elimination with partial pivoting
