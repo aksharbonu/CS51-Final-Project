@@ -2,7 +2,7 @@ all: final_project
 
 FILES=GaussianElimination.ml Matrix.ml Strassen.ml LU.ml MatrixFunctor.ml Math.ml
 
-findl_project: $(FILES)
+final_project: $(FILES)
 	@echo "Compiling..."
 	corebuild GaussianElimination.native
 	corebuild Matrix.native
