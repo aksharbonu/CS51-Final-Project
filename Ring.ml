@@ -26,7 +26,7 @@ module FloatRing =
         let zero = 0.
         let one = 1.
         let add = (+.)
-        let sub = (-)
+        let sub = (-.)
         let mul = ( *. )
         let div = (/.)
     end
