@@ -16,7 +16,7 @@ sig
     val solve : t -> t -> t *)
 end
 
-module type Ring =
+module type RING =
     sig
         type t
         val zero : t
@@ -49,7 +49,7 @@ module FloatRing =
         let div = (/.)
     end
 
-module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
+module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 	struct
 		(* 
 			open LU 

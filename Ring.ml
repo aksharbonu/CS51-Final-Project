@@ -1,4 +1,4 @@
-module type Ring =
+module type RING =
     sig
         type t
         val zero : t
