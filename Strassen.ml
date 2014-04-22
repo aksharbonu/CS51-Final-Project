@@ -72,7 +72,7 @@ let rec mul_invariant m1 m2 =
         let M3 = mul_invariant a11 (sub b12 b22) in
         let M4 = mul_invariant a22 (sub b21 b11) in
         let M5 = mul_invariant (add a11 a12) b22 in
-        let M6 = mul_invariant (add a21 a11) (add b11 b12) in
+        let M6 = mul_invariant (sub a21 a11) (add b11 b12) in
         let M7 = mul_invariant (sub a12 a22) (add b21 b22) in
 
         (*
