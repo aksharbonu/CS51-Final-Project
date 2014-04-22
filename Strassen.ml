@@ -96,17 +96,17 @@ let rec mul_invariant m1 m2 =
 
 
 let split parent child row col = 
-    let end = Array.length child - 1 in
-    for i = 0 to end do
-        for j = 0 to end do
+    let last = Array.length child - 1 in
+    for i = 0 to last do
+        for j = 0 to last do
             child.(i).(j) <- parent.(i + row).(j + col)
         done;
     done;;
 
 let join parent child row col = 
-    let end = Array.length child - 1 in
-    for i = 0 to end do
-        for j = 0 to end do
+    let last = Array.length child - 1 in
+    for i = 0 to last do
+        for j = 0 to last do
             parent.(i + row).(j + col) <- child.(i).(j) 
         done;
     done;; 

@@ -1,7 +1,7 @@
 open Matrix
 open Ring
 
-module MatrixFunctor (M : MATH) : MATRIX with type elt = M.t =
+module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 	struct
 		open Strassen
 		open LU 
