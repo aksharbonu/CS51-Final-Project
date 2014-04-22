@@ -29,7 +29,7 @@ let rec mul_invariant m1 m2 =
     let row = Array.length m1 in
     let result = zero row row in
     if row = 1 then 
-        (result.(0).(0) = M.mul m1.(0).(0) m2.(0).(0); result)
+        (result.(0).(0) <- M.mul m1.(0).(0) m2.(0).(0); result)
     else
         let dim = row / 2 in
 
