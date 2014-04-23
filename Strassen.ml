@@ -107,5 +107,5 @@ let rec mul_invariant matrix1 matrix2 =
 
         result and
 
-let mul m1 m2 =
+    mul m1 m2 =
     mul_invariant m1 m2;; 
