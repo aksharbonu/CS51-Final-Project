@@ -159,7 +159,7 @@ let rec mul_invariant matrix1 matrix2 =
         let m2_padded = pad m2 in
         let result_padded = mul_invariant m1_padded m2_padded in
         let result = zero (Array.length m1) (Array.length m2.(0)) in
-        let _ = split result result_padded 0 0 in
+        let _ = split result_padded result 0 0 in
         result;;
 
     (* Check if multiplication can be done *)
