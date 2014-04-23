@@ -85,7 +85,6 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 done;
             done;
             result
-        end
 
 let do_operation m1 m2 operation = 
     let row = Array.length m1 in
@@ -108,20 +107,20 @@ let sub m1 m2 =
 
 let fill result child = 
     for i = 0 to Array.length child - 1 do
-        for j = 0 to Array.length m1.(0) - 1 do
+        for j = 0 to Array.length child.(0) - 1 do
             result.(i).(j) <- child.(i).(j)
         done;
     done; result;; 
 
 let pad m1 = 
+    let row1 = Array.length m1 in
+    let col1 = Array.length m1.(0) in
     if row1 = col1 && row1 = 1 then m1
     else 
-    (let row1 = Array.length m1 in
-    let col1 = Array.length m1.(0) in
-    match row1 mod 2 = 0, col1 mod 2 = 0 with
+    (match row1 mod 2 = 0, col1 mod 2 = 0 with
     | true, true -> m1
-    | true, false -> fill (zero (row1 + 1) col1) m1
-    | false, true -> fill (zero row1 (col1 + 1)) m1
+    | true, false -> fill (zero row1 (col1 + 1)) m1
+    | false, true -> fill (zero (row1 + 1) col1) m1
     | _, _ ->  fill (zero (row1 + 1) (col1 + 1)) m1)
 
 let remove_pad result result_padded =
@@ -147,35 +146,37 @@ let join parent child row col =
 
 let rec mul_invariant matrix1 matrix2 =
     let row = Array.length matrix1 in
+    let col = Array.length matrix1.(0) in
     let result = zero row row in
-    if row = 1 then 
+    if row = 1 && col = 1 then 
         (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
     else
-        let dim = row / 2 in
+        let half_row = row / 2 in
+        let half_col = col / 2 in
 
         (* Create halves *)
 
-        let a11 = zero dim dim in
-        let a12 = zero dim dim in
-        let a21 = zero dim dim in
-        let a22 = zero dim dim in
-        let b11 = zero dim dim in
-        let b12 = zero dim dim in
-        let b21 = zero dim dim in
-        let b22 = zero dim dim in
+        let a11 = zero half_row half_col in
+        let a12 = zero half_row half_col in
+        let a21 = zero half_row half_col in
+        let a22 = zero half_row half_col in
+        let b11 = zero half_row half_col in
+        let b12 = zero half_row half_col in
+        let b21 = zero half_row half_col in
+        let b22 = zero half_row half_col in
 
         (* Split matrix 1 *)
         split matrix1 a11 0 0; 
-        split matrix1 a12 0 dim; 
-        split matrix1 a21 dim 0; 
-        split matrix1 a22 dim dim; 
+        split matrix1 a12 0 half_col; 
+        split matrix1 a21 half_row 0; 
+        split matrix1 a22 half_row half_col; 
 
         (* Split m2 *)
 
         split matrix2 b11 0 0; 
-        split matrix2 b12 0 dim; 
-        split matrix2 b21 dim 0; 
-        split matrix2 b22 dim dim; 
+        split matrix2 b12 0 half_col; 
+        split matrix2 b21 half_row 0; 
+        split matrix2 b22 half_row half_col; 
 
         (*
               M1 = (a11 + a22)(b11 + b22)
@@ -208,9 +209,9 @@ let rec mul_invariant matrix1 matrix2 =
         let c22 = add (sub (add m1 m3) m2) m6 in 
 
         join result c11 0 0; 
-        join result c12 0 dim; 
-        join result c21 dim 0; 
-        join result c22 dim dim;
+        join result c12 0 half_col; 
+        join result c21 half_row 0; 
+        join result c22 half_row half_col;
 
         result 
 
@@ -225,10 +226,8 @@ let rec mul_invariant matrix1 matrix2 =
         remove_pad result result_padded; result;;
 
     (* Check if multiplication can be done *)
-    mul m1 m2 =
-        let row = Array.length m1 in
-        let col = Array.length m1.(0) in
-        if col = Array.length m2 then mul_pad m1 m2
+    let mul m1 m2 =
+        if Array.length m1.(0) = Array.length m2 then mul_pad m1 m2
         else raise IncompatibleDimensions
 
 end
