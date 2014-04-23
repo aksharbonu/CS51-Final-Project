@@ -18,6 +18,8 @@ exception IncompatibleDimensions
             result;;
 
         let scalar value m1 =
+            let row = Array.length m1 in
+            let col = Array.length m1.(0) in 
             let result = zero row col in
                 for i = 0 to Array.length m1 - 1 do
                     for j = 0 to Array.length m1.(0) - 1 do
