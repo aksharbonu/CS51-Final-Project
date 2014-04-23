@@ -21,7 +21,7 @@ sig
     val compare : t -> t -> comparison
     val abs : elt -> elt
     val lu_decomp : t -> t * t
-    val solve : t -> elt array -> t * elt array
+    (* val solve : t -> elt array -> t * elt array *)
 end
 
 module type RING =
@@ -129,6 +129,8 @@ let lu_decomp m =
     for k = 0 to rows - 1 do
         lower.(k).(k) <- M.one;
         for i = k + 1 to cols - 1 do
+            (* How to handle the case when m.(k).(k) = 0. Is that possible
+               without pivoting? *)
             lower.(i).(k) <- M.div m.(i).(k) m.(k).(k);
             for j = k + 1 to cols - 1 do
                 m.(i).(j) <- M.sub m.(i).(j) (M.mul lower.(i).(k) m.(k).(j));
@@ -139,7 +141,7 @@ let lu_decomp m =
         done;
     done;
     (upper, lower)
-
+(*
 let solve m b =
     let length = Array.length b in
     let rows = Array.length m in
@@ -175,15 +177,25 @@ let solve m b =
         solution.(i).(0) <- M.div (M.sub b.(i) sum) m.(i).(i);
     done;
     (m, b)
-
+ *)
     end
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
-let matrix1 = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
-let matrix2 = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-let (u1, l1) = FloatMatrix.lu_decomp matrix1;;
-let (u2, l2) = FloatMatrix.lu_decomp matrix2;;
-let (m1, sol1) = FloatMatrix.solve matrix1 (Array.make_matrix 5 1 4.);;
-let (m2, sol2) = FloatMatrix.solve matrix2 (Array.make_matrix 3 1 1.);;
+let matrix1 = [|[|4.; 3.|]; [|6.; 3.|]|];;
+let matrix2 = [|[|8.; 2.; 9.|]; [|4.; 9.; 4.|]; [|6.; 7.; 9.|]|];;
+let (u1, l1) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix1);;
+let (u2, l2) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix2);;
+assert (FloatMatrix.to_array u1 = [|[|4.; 3.|]; [|0.; -1.5|]|]);;
+assert (FloatMatrix.to_array l1 = [|[|1.; 0.|]; [|1.5; 1.|]|]);;
+assert (FloatMatrix.to_array u2 =
+	  [|[|8.; 2.; 9.|]; [|0.; 8.; -0.5|]; [|0.; 0.; 2.59375|]|]);;
+assert (FloatMatrix.to_array l2 = 
+	  [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
+(* Need Akshar's Multiplication function in order to test the two below
+assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
+assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
+ *)
+(* let (m1, sol1) = FloatMatrix.solve matrix1 (Array.make_matrix 5 1 4.);;
+let (m2, sol2) = FloatMatrix.solve matrix2 (Array.make_matrix 3 1 1.);; *)
 
 
