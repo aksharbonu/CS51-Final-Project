@@ -14,6 +14,8 @@ sig
     (* val det : t -> int
     val inverse : t -> t
     val solve : t -> t -> t *)
+    val lu_decomp : t -> elt array -> t * elt array
+    val solve : t -> elt array -> t * elt array
 end
 
 module type RING =
@@ -36,7 +38,7 @@ module IntRing =
         let sub = (-)
         let mul = ( * )         
         let div = (/)   
-    end;;
+    end
 
 module FloatRing =
     struct
@@ -104,13 +106,13 @@ let add m1 m2 =
 let sub m1 m2 = 
         do_operation m1 m2 M.sub;;
 
-let LU_decomp m =
+let lu_decomp m =
     let rows = Array.length m in
     let cols = Array.length m.(0) in
     let lower = zero rows cols in
     let upper = zero rows cols in
     for k = 0 to rows - 1 do
-        lower.(k).(k) = 1
+        lower.(k).(k) <- 1.;
         for i = k + 1 to cols - 1 do
             lower.(i).(k) <- M.div m.(i).(k) m.(k).(k);
             for j = k + 1 to cols - 1 do
@@ -123,7 +125,7 @@ let LU_decomp m =
     done;
     (upper, lower)
 
-let solve (m : Matrix) (b : array) =
+let solve m b =
     let length = Array.length b in
     for i = 0 to length - 1 do
         let max = i in
@@ -139,7 +141,7 @@ let solve (m : Matrix) (b : array) =
             b.(max) <- temp_b;
 
         for j = i + 1 to length - 1 do
-            let factor = M.div m.(j).(i)) m.(i).(i) in
+            let factor = M.div m.(j).(i) m.(i).(i) in
             b.(j) <- M.sub b.(j) (M.mul factor b.(i));
             for p = i to length - 1 do
                 m.(j).(p) <- M.sub m.(j).(p) (M.mul factor m.(i).(p));
