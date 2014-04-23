@@ -129,7 +129,7 @@ let split parent child row col =
         for j = 0 to Array.length child.(0) - 1 do
             child.(i).(j) <- parent.(i + row).(j + col)
         done;
-     done;
+     done; child;;
 
 let rec mul_invariant matrix1 matrix2 =
     (* Saves rows & columns of matrices for future use*)
@@ -158,17 +158,17 @@ let rec mul_invariant matrix1 matrix2 =
         let b22 = zero half_row2 half_col2 in
 
         (* Split matrix 1 *)
-        split matrix1 a11 0 0; 
-        split matrix1 a12 0 half_col1; 
-        split matrix1 a21 half_row1 0; 
-        split matrix1 a22 half_row1 half_col1; 
+        let _ = split matrix1 a11 0 0 in 
+        let _ = split matrix1 a12 0 half_col1 in 
+        let _ = split matrix1 a21 half_row1 0 in 
+        let _ = split matrix1 a22 half_row1 half_col1 in
 
         (* Split m2 *)
 
-        split matrix2 b11 0 0; 
-        split matrix2 b12 0 half_col2; 
-        split matrix2 b21 half_row2 0; 
-        split matrix2 b22 half_row2 half_col2; 
+        let _ = split matrix2 b11 0 0 in 
+        let _ = split matrix2 b12 0 half_col2 in 
+        let _ = split matrix2 b21 half_row2 0 in 
+        let _ = split matrix2 b22 half_row2 half_col2 in 
 
         (*
               M1 = (a11 + a22)(b11 + b22)
@@ -201,10 +201,10 @@ let rec mul_invariant matrix1 matrix2 =
         let c22 = add (sub (add m1 m3) m2) m6 in 
 
         (* Adds the elements of the 2nd matrix to the first *)
-        join result c11 0 0; 
-        join result c12 0 half_row1; 
-        join result c21 half_row1 0; 
-        join result c22 half_row1 half_row1;
+        let _ = join result c11 0 0 in  
+        let _ = join result c12 0 half_row1 in  
+        let _ = join result c21 half_row1 0 in  
+        let _ = join result c22 half_row1 half_row1 in
         result 
 
     and
@@ -215,7 +215,8 @@ let rec mul_invariant matrix1 matrix2 =
         let m2_padded = pad m2 in
         let result_padded = mul_invariant m1_padded m2_padded in
         let result = zero (Array.length m1) (Array.length m2.(0)) in
-        split result result_padded 0 0; result;;
+        let _ = split result result_padded 0 0 in
+        result;;
 
     (* Check if multiplication can be done *)
     let mul m1 m2 =
