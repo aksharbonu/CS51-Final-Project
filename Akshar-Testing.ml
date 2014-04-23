@@ -56,7 +56,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             open GaussianElimination    
         *)
 
-                exception IncompatibleDimensions
+  exception IncompatibleDimensions
 
         type elt = M.t
 
@@ -76,14 +76,12 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             result;;
 
         let scalar value m1 =
-        let row = Array.length m1 in
-        let col = Array.length m1.(0) in 
-        let result = zero row col in
-            for i = 0 to row - 1 do
-                for j = 0 to col - 1 do
-                    result.(i).(j) <- M.mul m1.(i).(j) value
+            let result = zero row col in
+                for i = 0 to Array.length m1 - 1 do
+                    for j = 0 to Array.length m1.(0) - 1 do
+                        result.(i).(j) <- M.mul m1.(i).(j) value
+                    done;
                 done;
-            done;
             result;;
 
 let do_operation m1 m2 operation = 
@@ -105,13 +103,15 @@ let add m1 m2 =
 let sub m1 m2 = 
         do_operation m1 m2 M.sub;;
 
-let fill result child = 
+(* Adds the child matrix to the parent matrix starting at index (row, col) *)
+let join parent child row col =  
     for i = 0 to Array.length child - 1 do
         for j = 0 to Array.length child.(0) - 1 do
-            result.(i).(j) <- child.(i).(j)
+            parent.(i + row).(j + col) <- child.(i).(j) 
         done;
-    done; result;; 
+     done; parent;;
 
+(* Checks if dimensions are both 1 (base case) or odd dimensions and makes even *)
 let pad m1 = 
     let row1 = Array.length m1 in
     let col1 = Array.length m1.(0) in
@@ -119,47 +119,31 @@ let pad m1 =
     else 
     (match row1 mod 2 = 0, col1 mod 2 = 0 with
     | true, true -> m1
-    | true, false -> fill (zero row1 (col1 + 1)) m1
-    | false, true -> fill (zero (row1 + 1) col1) m1
-    | _, _ ->  fill (zero (row1 + 1) (col1 + 1)) m1);;
+    | true, false -> join (zero row1 (col1 + 1)) m1 0 0 
+    | false, true -> join (zero (row1 + 1) col1) m1 0 0
+    | _, _ ->  join (zero (row1 + 1) (col1 + 1)) m1 0 0);;
 
-let remove_pad result result_padded =
-    for i = 0 to Array.length result - 1 do
-        for j = 0 to Array.length result.(0) - 1 do
-            result.(i).(j) <- result_padded.(i).(j)
-        done;
-    done;;
-
+(* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
 let split parent child row col =
-  try  
     for i = 0 to Array.length child - 1 do
         for j = 0 to Array.length child.(0) - 1 do
             child.(i).(j) <- parent.(i + row).(j + col)
         done;
      done;
-  with Invalid_argument "index out of bounds" -> assert false;;
-
-let join parent child row col = 
-try 
-    for i = 0 to Array.length child - 1 do
-        for j = 0 to Array.length child.(0) - 1 do
-            parent.(i + row).(j + col) <- child.(i).(j) 
-        done;
-     done;
-with Invalid_argument "index out of bounds" -> assert false;;
 
 let rec mul_invariant matrix1 matrix2 =
+    (* Saves rows & columns of matrices for future use*)
     let row1 = Array.length matrix1 in
     let col1 = Array.length matrix1.(0) in
     let row2 = Array.length matrix2 in
     let col2 = Array.length matrix2.(0) in
     let result = zero row1 row1 in
-    if row1 = 1 && col1 = 1 && row2 = 1 && col2 = 1 then 
+    if row1 = 1 then 
         (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
     else
         let half_row1 = row1 / 2 in
         let half_col1 = col1 / 2 in
-    let half_row2 = row2 / 2 in
+        let half_row2 = row2 / 2 in
         let half_col2 = col2 / 2 in
 
         (* Create halves *)
@@ -216,11 +200,11 @@ let rec mul_invariant matrix1 matrix2 =
         let c21 = add m2 m4 in
         let c22 = add (sub (add m1 m3) m2) m6 in 
 
+        (* Adds the elements of the 2nd matrix to the first *)
         join result c11 0 0; 
         join result c12 0 half_row1; 
         join result c21 half_row1 0; 
         join result c22 half_row1 half_row1;
-
         result 
 
     and
@@ -231,7 +215,7 @@ let rec mul_invariant matrix1 matrix2 =
         let m2_padded = pad m2 in
         let result_padded = mul_invariant m1_padded m2_padded in
         let result = zero (Array.length m1) (Array.length m2.(0)) in
-        remove_pad result result_padded; result;;
+        split result result_padded 0 0; result;;
 
     (* Check if multiplication can be done *)
     let mul m1 m2 =
