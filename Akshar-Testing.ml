@@ -228,12 +228,14 @@ let rec mul_invariant matrix1 matrix2 =
 
     end
 
-module FloatMatrix = MatrixFunctor (FloatRing);;
-let matrix1 = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
-let matrix2 = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-FloatMatrix.to_array (FloatMatrix.mul matrix1 matrix2);;
+(* Test FloatRing *)
 
-let matrix3 = FloatMatrix.of_array 
+module FloatMatrix = MatrixFunctor (FloatRing);;
+let matrix1f = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
+let matrix2f = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
+FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f);;
+
+let matrix3f = FloatMatrix.of_array 
 [|
 [|1.; 2.; 3.; 4.|];
 [|5.; 6.; 7.; 8.|]; 
@@ -242,7 +244,7 @@ let matrix3 = FloatMatrix.of_array
 [|1.; 2.; 3.; 4.|];
 |];;
 
-let matrix4 = FloatMatrix.of_array 
+let matrix4f = FloatMatrix.of_array 
 [|
 [|1.; 2.; 3.; 4.; 5.|];
 [|5.; 6.; 7.; 8.; 9.|]; 
@@ -250,4 +252,30 @@ let matrix4 = FloatMatrix.of_array
 [|-5.; -6.; -7.; -8.; -9.|]; 
 |];;
 
-FloatMatrix.to_array (FloatMatrix.mul matrix3 matrix4);;
+FloatMatrix.to_array (FloatMatrix.mul matrix3f matrix4f);;
+
+(* Test IntRing *)
+
+module IntMatrix = MatrixFunctor (IntRing);;
+let matrix1i = IntMatrix.of_array (Array.make_matrix 5 3 2);;
+let matrix2i = IntMatrix.of_array (Array.make_matrix 3 5 3);;
+IntMatrix.to_array (IntMatrix.mul matrix1i matrix2i);;
+
+let matrix3i = IntMatrix.of_array 
+[|
+[|1; 2; 3; 4|];
+[|5; 6; 7; 8|]; 
+[|-1; -2; -3; -4|];
+[|-5; -6; -7; -8|]; 
+[|1; 2; 3; 4|];
+|];;
+
+let matrix4i = IntMatrix.of_array 
+[|
+[|1; 2; 3; 4; 5|];
+[|5; 6; 7; 8; 9|]; 
+[|-1; -2; -3; -4; -5|];
+[|-5; -6; -7; -8; -9|]; 
+|];;
+
+IntMatrix.to_array (IntMatrix.mul matrix3i matrix4i);;
