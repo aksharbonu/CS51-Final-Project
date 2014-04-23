@@ -33,7 +33,7 @@ exception IncompatibleDimensions
 
 let do_operation m1 m2 operation = 
     let row, col = dim m1 in
-    if row = Array.length m2 && col = Array.length m2.(0) then
+    if row, col = dim m2 then
         (let result = zero row col in
         for i = 0 to row - 1 do
             for j = 0 to col - 1 do
