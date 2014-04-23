@@ -1,4 +1,4 @@
-exception IncompatibleDimensions
+  exception IncompatibleDimensions
 
         type elt = M.t
 
@@ -72,53 +72,61 @@ let remove_pad result result_padded =
         done;
     done;;
 
-let split parent child row col = 
+let split parent child row col =
+  try  
     for i = 0 to Array.length child - 1 do
         for j = 0 to Array.length child.(0) - 1 do
             child.(i).(j) <- parent.(i + row).(j + col)
         done;
-    done;;
+     done;
+  with Invalid_argument "index out of bounds" -> assert false;;
 
 let join parent child row col = 
+try 
     for i = 0 to Array.length child - 1 do
         for j = 0 to Array.length child.(0) - 1 do
             parent.(i + row).(j + col) <- child.(i).(j) 
         done;
-    done;;
+     done;
+with Invalid_argument "index out of bounds" -> assert false;;
 
 let rec mul_invariant matrix1 matrix2 =
-    let row = Array.length matrix1 in
-    let col = Array.length matrix1.(0) in
-    let result = zero row row in
-    if row = 1 && col = 1 then 
+    let row1 = Array.length matrix1 in
+    let col1 = Array.length matrix1.(0) in
+    let row2 = Array.length matrix2 in
+    let col2 = Array.length matrix2.(0) in
+    let result = zero row1 row1 in
+    if row1 = 1 && col1 = 1 && row2 = 1 && col2 = 1 then 
         (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
     else
-        let half_row = row / 2 in
-        let half_col = col / 2 in
+        let half_row1 = row1 / 2 in
+        let half_col1 = col1 / 2 in
+    let half_row2 = row2 / 2 in
+        let half_col2 = col2 / 2 in
 
         (* Create halves *)
 
-        let a11 = zero half_row half_col in
-        let a12 = zero half_row half_col in
-        let a21 = zero half_row half_col in
-        let a22 = zero half_row half_col in
-        let b11 = zero half_row half_col in
-        let b12 = zero half_row half_col in
-        let b21 = zero half_row half_col in
-        let b22 = zero half_row half_col in
+        let a11 = zero half_row1 half_col1 in
+        let a12 = zero half_row1 half_col1 in
+        let a21 = zero half_row1 half_col1 in
+        let a22 = zero half_row1 half_col1 in
+        let b11 = zero half_row2 half_col2 in
+        let b12 = zero half_row2 half_col2 in
+        let b21 = zero half_row2 half_col2 in
+        let b22 = zero half_row2 half_col2 in
 
         (* Split matrix 1 *)
         split matrix1 a11 0 0; 
-        split matrix1 a12 0 half_col; 
-        split matrix1 a21 half_row 0; 
-        split matrix1 a22 half_row half_col; 
+        split matrix1 a12 0 half_col1; 
+        split matrix1 a21 half_row1 0; 
+        split matrix1 a22 half_row1 half_col1; 
 
         (* Split m2 *)
 
         split matrix2 b11 0 0; 
-        split matrix2 b12 0 half_col; 
-        split matrix2 b21 half_row 0; 
-        split matrix2 b22 half_row half_col; 
+        split matrix2 b12 0 half_col2; 
+        split matrix2 b21 half_row2 0; 
+        split matrix2 b22 half_row2 half_col2; 
 
         (*
               M1 = (a11 + a22)(b11 + b22)
@@ -151,9 +159,9 @@ let rec mul_invariant matrix1 matrix2 =
         let c22 = add (sub (add m1 m3) m2) m6 in 
 
         join result c11 0 0; 
-        join result c12 0 half_col; 
-        join result c21 half_row 0; 
-        join result c22 half_row half_col;
+        join result c12 0 half_row1; 
+        join result c21 half_row1 0; 
+        join result c22 half_row1 half_row1;
 
         result 
 
