@@ -108,29 +108,29 @@ let sub m1 m2 =
 
 (* Adds the child matrix to the parent matrix starting at index (row, col) *)
 let join parent child row col =  
-    let row, col = dim child in
-    for i = 0 to row - 1 do
-        for j = 0 to col - 1 do
+    let row_child, col_child = dim child in
+    for i = 0 to row_child - 1 do
+        for j = 0 to col_child - 1 do
             parent.(i + row).(j + col) <- child.(i).(j) 
         done;
      done; parent;;
 
 (* Checks if dimensions are both 1 (base case) or odd dimensions and makes even *)
 let pad m1 = 
-    let row1, col1 = dim m1 in
-    if row1 = col1 && row1 = 1 then m1
+    let row, col = dim m1 in
+    if row = col && row = 1 then m1
     else 
-    (match row1 mod 2 = 0, col1 mod 2 = 0 with
+    (match row mod 2 = 0, col mod 2 = 0 with
     | true, true -> m1
-    | true, false -> join (zero row1 (col1 + 1)) m1 0 0 
-    | false, true -> join (zero (row1 + 1) col1) m1 0 0
-    | _, _ ->  join (zero (row1 + 1) (col1 + 1)) m1 0 0);;
+    | true, false -> join (zero row (col + 1)) m1 0 0 
+    | false, true -> join (zero (row + 1) col) m1 0 0
+    | _, _ ->  join (zero (row + 1) (col + 1)) m1 0 0);;
 
 (* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
 let split parent child row col =
-    let row, col = dim child in 
-    for i = 0 to row - 1 do
-        for j = 0 to col - 1 do
+    let row_child, col_child = dim child in 
+    for i = 0 to row_child - 1 do
+        for j = 0 to col_child - 1 do
             child.(i).(j) <- parent.(i + row).(j + col)
         done;
      done; child;;
@@ -216,7 +216,7 @@ let rec mul_invariant matrix1 matrix2 =
         let m1_padded = pad m1 in
         let m2_padded = pad m2 in
         let result_padded = mul_invariant m1_padded m2_padded in
-        if dim m1 = dim m1_padded && dim m2 = dim m2_padded then result padded
+        if dim m1 = dim m1_padded && dim m2 = dim m2_padded then result_padded
         else let result = zero (Array.length m1) (Array.length m2.(0)) in
         let _ = split result_padded result 0 0 in
         result;;
