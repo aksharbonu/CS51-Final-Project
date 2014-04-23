@@ -1,4 +1,4 @@
-open Core.Std
+open Core.std
 
 type comparison = Less | Equal | Greater;;
 
@@ -14,13 +14,13 @@ sig
     val add : t -> t -> t
     val sub : t -> t -> t
     val scalar : elt -> t -> t
-    (* val mul : t -> t -> t
-    val det : t -> int
+    val mul : t -> t -> t
+    (* val det : t -> int
     val inverse : t -> t
     val solve : t -> t -> t *)
     val compare : t -> t -> comparison
-    val abs : elt -> elt
-    val lu_decomp : t -> t * t
+    val abs : t -> t
+    val lu_decomp : t -> elt array -> t * elt array
     val solve : t -> elt array -> t * elt array
 end
 
@@ -142,12 +142,12 @@ let lu_decomp m =
 
 let solve m b =
     let length = Array.length b in
-    let rows = Array.length m in
     for i = 0 to length - 1 do
         let max = i in
         for j = i + 1 to length - 1 do
             match compare (abs m.(j).(i)) (abs m.(max).(i)) with
             | Greater -> max = i;
+            | _ -> false;
         done;
 
         let temp_row = m.(i) in
@@ -166,13 +166,13 @@ let solve m b =
         done;    
     done; 
 
-    let solution = Array.make_matrix length 1 M.zero in
+    let soluton = Array.make length 0 in
     for i = rows - 1 downto 0 do
-        let sum = M.zero in
+        let sum = 0.0 in
         for j = i + 1 to rows - 1 do
-            sum = M.add sum (M.mul m.(i).(j) solution.(j).(0))
+            sum = M.add sum (M.mul a.(i).(j) solution.(j))
         done;
-        solution.(i).(0) <- M.div (M.sub b.(i) sum) m.(i).(i);
+        solution.(i) <- M.div (M.sub b.(i) sum) m.(i).(i);
     done;
     (m, b)
 
@@ -181,8 +181,8 @@ let solve m b =
 module FloatMatrix = MatrixFunctor (FloatRing);;
 let matrix1 = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
 let matrix2 = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-let (u1, l1) = FloatMatrix.lu_decomp matrix1;;
-let (u2, l2) = FloatMatrix.lu_decomp matrix2;;
+let (u1, l1) = FloatMatrix.LU_decomp matrix1;;
+let (u2, l2) = FloatMatrix.LU_decomp matrix2;;
 let (m1, sol1) = FloatMatrix.solve matrix1 (Array.make_matrix 5 1 4.);;
 let (m2, sol2) = FloatMatrix.solve matrix2 (Array.make_matrix 3 1 1.);;
 
