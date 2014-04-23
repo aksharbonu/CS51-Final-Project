@@ -230,3 +230,22 @@ module FloatMatrix = MatrixFunctor (FloatRing);;
 let matrix1 = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
 let matrix2 = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
 FloatMatrix.to_array (FloatMatrix.mul matrix1 matrix2);;
+
+let matrix3 = FloatMatrix.of_array 
+[|
+[|1.; 2.; 3.; 4.|];
+[|5.; 6.; 7.; 8.|]; 
+[|-1.; -2.; -3.; -4.|];
+[|-5.; -6.; -7.; -8.|]; 
+[|1.; 2.; 3.; 4.|];
+|];;
+
+let matrix4 = FloatMatrix.of_array 
+[|
+[|1.; 2.; 3.; 4.; 5.|];
+[|5.; 6.; 7.; 8.; 9.|]; 
+[|-1.; -2.; -3.; -4.; -5.|];
+[|-5.; -6.; -7.; -8.; -9.|]; 
+|];;
+
+FloatMatrix.to_array (FloatMatrix.mul matrix3 matrix4);;
