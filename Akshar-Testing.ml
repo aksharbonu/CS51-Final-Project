@@ -84,7 +84,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                     result.(i).(j) <- M.mul m1.(i).(j) value
                 done;
             done;
-            result
+            result;;
 
 let do_operation m1 m2 operation = 
     let row = Array.length m1 in
@@ -121,14 +121,14 @@ let pad m1 =
     | true, true -> m1
     | true, false -> fill (zero row1 (col1 + 1)) m1
     | false, true -> fill (zero (row1 + 1) col1) m1
-    | _, _ ->  fill (zero (row1 + 1) (col1 + 1)) m1)
+    | _, _ ->  fill (zero (row1 + 1) (col1 + 1)) m1);;
 
 let remove_pad result result_padded =
     for i = 0 to Array.length result - 1 do
         for j = 0 to Array.length result.(0) - 1 do
             result.(i).(j) <- result_padded.(i).(j)
         done;
-    done;
+    done;;
 
 let split parent child row col = 
     for i = 0 to Array.length child - 1 do
@@ -222,7 +222,7 @@ let rec mul_invariant matrix1 matrix2 =
         let m1_padded = pad m1 in
         let m2_padded = pad m2 in
         let result_padded = mul_invariant m1_padded m2_padded in
-        let result = zero (Array.length m1) (Array.length m2.(0))
+        let result = zero (Array.length m1) (Array.length m2.(0)) in
         remove_pad result result_padded; result;;
 
     (* Check if multiplication can be done *)
