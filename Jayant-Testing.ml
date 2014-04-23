@@ -104,129 +104,67 @@ let add m1 m2 =
 let sub m1 m2 = 
         do_operation m1 m2 M.sub;;
 
-(* Adds the child matrix to the parent matrix starting at index (row, col) *)
-let join parent child row col =  
-    for i = 0 to Array.length child - 1 do
-        for j = 0 to Array.length child.(0) - 1 do
-            parent.(i + row).(j + col) <- child.(i).(j) 
+let LU_decomp m =
+    let rows = Array.length m in
+    let cols = Array.length m.(0) in
+    let lower = zero rows cols in
+    let upper = zero rows cols in
+    for k = 0 to rows - 1 do
+        lower.(k).(k) = 1
+        for i = k + 1 to cols - 1 do
+            lower.(i).(k) <- M.div m.(i).(k) m.(k).(k);
+            for j = k + 1 to cols - 1 do
+                m.(i).(j) <- M.sub m.(i).(j) (M.mul lower.(i).(k) * m.(k).(j));
+            done;
         done;
-     done; parent;;
-
-(* Checks if dimensions are both 1 (base case) or odd dimensions and makes even *)
-let pad m1 = 
-    let row1 = Array.length m1 in
-    let col1 = Array.length m1.(0) in
-    if row1 = col1 && row1 = 1 then m1
-    else 
-    (match row1 mod 2 = 0, col1 mod 2 = 0 with
-    | true, true -> m1
-    | true, false -> join (zero row1 (col1 + 1)) m1 0 0 
-    | false, true -> join (zero (row1 + 1) col1) m1 0 0
-    | _, _ ->  join (zero (row1 + 1) (col1 + 1)) m1 0 0);;
-
-(* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
-let split parent child row col =
-    for i = 0 to Array.length child - 1 do
-        for j = 0 to Array.length child.(0) - 1 do
-            child.(i).(j) <- parent.(i + row).(j + col)
+        for j = k to cols - 1 do
+            upper.(k).(j) <- m.(k).(j);
         done;
-     done; child;;
+    done;
+    (upper, lower)
 
-let rec mul_invariant matrix1 matrix2 =
-    (* Saves rows & columns of matrices for future use*)
-    let row1 = Array.length matrix1 in
-    let col1 = Array.length matrix1.(0) in
-    let row2 = Array.length matrix2 in
-    let col2 = Array.length matrix2.(0) in
-    let result = zero row1 row1 in
-    if row1 = 1 then 
-        (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
-    else
-        let half_row1 = row1 / 2 in
-        let half_col1 = col1 / 2 in
-        let half_row2 = row2 / 2 in
-        let half_col2 = col2 / 2 in
+let solve (m : Matrix) (b : array) =
+    let length = Array.length b in
+    for i = 0 to length - 1 do
+        let max = i in
+        for j = i + 1 to length - 1 do
+            if (abs m.(j).(i)) > (abs m.(max).(i)) then max = i
+        done;
 
-        (* Create halves *)
+        let temp_row = m.(i) in
+            m.(i) <- m.(max);
+            m.(max) <- temp_row;
+        let temp_b = b.(i) in
+            b.(i) <- b.(max);
+            b.(max) <- temp_b;
 
-        let a11 = zero half_row1 half_col1 in
-        let a12 = zero half_row1 half_col1 in
-        let a21 = zero half_row1 half_col1 in
-        let a22 = zero half_row1 half_col1 in
-        let b11 = zero half_row2 half_col2 in
-        let b12 = zero half_row2 half_col2 in
-        let b21 = zero half_row2 half_col2 in
-        let b22 = zero half_row2 half_col2 in
+        for j = i + 1 to length - 1 do
+            let factor = M.div m.(j).(i)) m.(i).(i) in
+            b.(j) <- M.sub b.(j) (M.mul factor b.(i));
+            for p = i to length - 1 do
+                m.(j).(p) <- M.sub m.(j).(p) (M.mul factor m.(i).(p));
+            done;
+        done;    
+    done; 
 
-        (* Split matrix 1 *)
-        let _ = split matrix1 a11 0 0 in 
-        let _ = split matrix1 a12 0 half_col1 in 
-        let _ = split matrix1 a21 half_row1 0 in 
-        let _ = split matrix1 a22 half_row1 half_col1 in
-
-        (* Split m2 *)
-
-        let _ = split matrix2 b11 0 0 in 
-        let _ = split matrix2 b12 0 half_col2 in 
-        let _ = split matrix2 b21 half_row2 0 in 
-        let _ = split matrix2 b22 half_row2 half_col2 in 
-
-        (*
-              M1 = (a11 + a22)(b11 + b22)
-              M2 = (a21 + a22) b11
-              M3 = a11 (b12 - b22)
-              M4 = a22 (b21 - b11)
-              M5 = (a11 + a12) b22
-              M6 = (a21 - a11) (b11 + b12)
-              M7 = (a12 - a22) (b21 + b22)
-        *)
-
-        let m1 = mul_pad (add a11 a22) (add b11 b22) in 
-        let m2 = mul_pad (add a21 a22) b11 in 
-        let m3 = mul_pad a11 (sub b12 b22) in
-        let m4 = mul_pad a22 (sub b21 b11) in
-        let m5 = mul_pad (add a11 a12) b22 in
-        let m6 = mul_pad (sub a21 a11) (add b11 b12) in
-        let m7 = mul_pad (sub a12 a22) (add b21 b22) in
-
-        (*
-          C11 = M1 + M4 - M5 + M7
-          C12 = M3 + M5
-          C21 = M2 + M4
-          C22 = M1 - M2 + M3 + M6
-        *) 
-
-        let c11 = add (sub (add m1 m4) m5) m7 in
-        let c12 = add m3 m5 in
-        let c21 = add m2 m4 in
-        let c22 = add (sub (add m1 m3) m2) m6 in 
-
-        (* Adds the elements of the 2nd matrix to the first *)
-        let _ = join result c11 0 0 in  
-        let _ = join result c12 0 half_row1 in  
-        let _ = join result c21 half_row1 0 in  
-        let _ = join result c22 half_row1 half_row1 in
-        result 
-
-    and
-
-    (* Remove & add padding *)
-    mul_pad m1 m2 =
-        let m1_padded = pad m1 in
-        let m2_padded = pad m2 in
-        let result_padded = mul_invariant m1_padded m2_padded in
-        let result = zero (Array.length m1) (Array.length m2.(0)) in
-        let _ = split result_padded result 0 0 in
-        result;;
-
-    (* Check if multiplication can be done *)
-    let mul m1 m2 =
-        if Array.length m1.(0) = Array.length m2 then mul_pad m1 m2
-        else raise IncompatibleDimensions
+    let soluton = Array.make length 0 in
+    for i = rows - 1 downto 0 do
+        let sum = 0.0 in
+        for j = i + 1 to rows - 1 do
+            sum = M.add sum (M.mul a.(i).(j) solution.(j))
+        done;
+        solution.(i) <- M.div (M.sub b.(i) sum) m.(i).(i);
+    done;
+    (m, b)
 
     end
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
 let matrix1 = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
 let matrix2 = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-FloatMatrix.to_array (FloatMatrix.mul matrix1 matrix2);;
+let (u1, l1) = FloatMatrix.LU_decomp matrix1;;
+let (u2, l2) = FloatMatrix.LU_decomp matrix2;;
+let (m1, sol1) = FloatMatrix.solve matrix1 (Array.make_matrix 5 1 4.);;
+let (m2, sol2) = FloatMatrix.solve matrix2 (Array.make_matrix 3 1 1.);;
+
+
