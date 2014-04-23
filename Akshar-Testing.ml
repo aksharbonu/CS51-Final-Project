@@ -74,20 +74,22 @@ exception IncompatibleDimensions
             done;
             result;;
 
+
+        let dim m1 = Array.length m1, Array.length m1.(0);; 
+
         let scalar value m1 =
-            let row = Array.length m1 in
-            let col = Array.length m1.(0) in 
+            let row, col = dim m1 in
             let result = zero row col in
-                for i = 0 to Array.length m1 - 1 do
-                    for j = 0 to Array.length m1.(0) - 1 do
+                for i = 0 to row - 1 do
+                    for j = 0 to col - 1 do
                         result.(i).(j) <- M.mul m1.(i).(j) value
                     done;
                 done;
             result;;
 
+
 let do_operation m1 m2 operation = 
-    let row = Array.length m1 in
-    let col = Array.length m1.(0) in 
+    let row, col = dim m1 in
     if row = Array.length m2 && col = Array.length m2.(0) then
         (let result = zero row col in
         for i = 0 to row - 1 do
@@ -106,38 +108,37 @@ let sub m1 m2 =
 
 (* Adds the child matrix to the parent matrix starting at index (row, col) *)
 let join parent child row col =  
-    for i = 0 to Array.length child - 1 do
-        for j = 0 to Array.length child.(0) - 1 do
+    let row_child, col_child = dim child in
+    for i = 0 to row_child - 1 do
+        for j = 0 to col_child - 1 do
             parent.(i + row).(j + col) <- child.(i).(j) 
         done;
      done; parent;;
 
 (* Checks if dimensions are both 1 (base case) or odd dimensions and makes even *)
 let pad m1 = 
-    let row1 = Array.length m1 in
-    let col1 = Array.length m1.(0) in
-    if row1 = col1 && row1 = 1 then m1
+    let row, col = dim m1 in
+    if row = col && row = 1 then m1
     else 
-    (match row1 mod 2 = 0, col1 mod 2 = 0 with
+    (match row mod 2 = 0, col mod 2 = 0 with
     | true, true -> m1
-    | true, false -> join (zero row1 (col1 + 1)) m1 0 0 
-    | false, true -> join (zero (row1 + 1) col1) m1 0 0
-    | _, _ ->  join (zero (row1 + 1) (col1 + 1)) m1 0 0);;
+    | true, false -> join (zero row (col + 1)) m1 0 0 
+    | false, true -> join (zero (row + 1) col) m1 0 0
+    | _, _ ->  join (zero (row + 1) (col + 1)) m1 0 0);;
 
 (* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
 let split parent child row col =
-    for i = 0 to Array.length child - 1 do
-        for j = 0 to Array.length child.(0) - 1 do
+    let row_child, col_child = dim child in 
+    for i = 0 to row_child - 1 do
+        for j = 0 to col_child - 1 do
             child.(i).(j) <- parent.(i + row).(j + col)
         done;
      done; child;;
 
 let rec mul_invariant matrix1 matrix2 =
     (* Saves rows & columns of matrices for future use*)
-    let row1 = Array.length matrix1 in
-    let col1 = Array.length matrix1.(0) in
-    let row2 = Array.length matrix2 in
-    let col2 = Array.length matrix2.(0) in
+    let row1, col1 = dim matrix1 in
+    let row2, col2 = dim matrix2 in
     let result = zero row1 row1 in
     if row1 = 1 then 
         (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
@@ -215,7 +216,8 @@ let rec mul_invariant matrix1 matrix2 =
         let m1_padded = pad m1 in
         let m2_padded = pad m2 in
         let result_padded = mul_invariant m1_padded m2_padded in
-        let result = zero (Array.length m1) (Array.length m2.(0)) in
+        if dim m1 = dim m1_padded && dim m2 = dim m2_padded then result_padded
+        else let result = zero (Array.length m1) (Array.length m2.(0)) in
         let _ = split result_padded result 0 0 in
         result;;
 
@@ -226,12 +228,14 @@ let rec mul_invariant matrix1 matrix2 =
 
     end
 
-module FloatMatrix = MatrixFunctor (FloatRing);;
-let matrix1 = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
-let matrix2 = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-FloatMatrix.to_array (FloatMatrix.mul matrix1 matrix2);;
+(* Test FloatRing *)
 
-let matrix3 = FloatMatrix.of_array 
+module FloatMatrix = MatrixFunctor (FloatRing);;
+let matrix1f = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
+let matrix2f = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
+FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f);;
+
+let matrix3f = FloatMatrix.of_array 
 [|
 [|1.; 2.; 3.; 4.|];
 [|5.; 6.; 7.; 8.|]; 
@@ -240,7 +244,7 @@ let matrix3 = FloatMatrix.of_array
 [|1.; 2.; 3.; 4.|];
 |];;
 
-let matrix4 = FloatMatrix.of_array 
+let matrix4f = FloatMatrix.of_array 
 [|
 [|1.; 2.; 3.; 4.; 5.|];
 [|5.; 6.; 7.; 8.; 9.|]; 
@@ -248,4 +252,30 @@ let matrix4 = FloatMatrix.of_array
 [|-5.; -6.; -7.; -8.; -9.|]; 
 |];;
 
-FloatMatrix.to_array (FloatMatrix.mul matrix3 matrix4);;
+FloatMatrix.to_array (FloatMatrix.mul matrix3f matrix4f);;
+
+(* Test IntRing *)
+
+module IntMatrix = MatrixFunctor (IntRing);;
+let matrix1i = IntMatrix.of_array (Array.make_matrix 5 3 2);;
+let matrix2i = IntMatrix.of_array (Array.make_matrix 3 5 3);;
+IntMatrix.to_array (IntMatrix.mul matrix1i matrix2i);;
+
+let matrix3i = IntMatrix.of_array 
+[|
+[|1; 2; 3; 4|];
+[|5; 6; 7; 8|]; 
+[|-1; -2; -3; -4|];
+[|-5; -6; -7; -8|]; 
+[|1; 2; 3; 4|];
+|];;
+
+let matrix4i = IntMatrix.of_array 
+[|
+[|1; 2; 3; 4; 5|];
+[|5; 6; 7; 8; 9|]; 
+[|-1; -2; -3; -4; -5|];
+[|-5; -6; -7; -8; -9|]; 
+|];;
+
+IntMatrix.to_array (IntMatrix.mul matrix3i matrix4i);;
