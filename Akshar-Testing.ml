@@ -182,7 +182,7 @@ let rec mul_invariant matrix1 matrix2 =
         join result c21 dim 0; 
         join result c22 dim dim;
 
-        result;;
+        result and
 
 let mul m1 m2 =
     mul_invariant m1 m2;; 
