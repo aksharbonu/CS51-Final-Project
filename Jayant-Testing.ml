@@ -158,10 +158,14 @@ let lu_decomp m =
 let solve m b =
     let length = Array.length b in
     let rows = Array.length m in
+    if length <> rows then raise IncompatibleDimensions
+    else
+    let cols = Array.length m.(0) in
     for k = 0 to length - 1 do
         let max = ref k in
-        for i = k + 1 to length - 1 do
-            match M.comp (abs m.(i).(k)) (abs m.(!max).(k)) with
+        for i = k + 1 to rows - 1 do
+            match M.comp (abs try m.(i).(k) with Invalid Argument "index out of bounds" -> assert false) 
+            (abs try m.(!max).(k) with Invalid Argument "index out of bounds" -> assert false) with
             | Greater -> (max := i);
             | _ -> ();
         done;
@@ -174,7 +178,8 @@ let solve m b =
             b.(!max) <- temp_b;
 
         for i = k + 1 to length - 1 do
-            let factor = M.div m.(i).(k) m.(k).(k) in
+            let factor = M.div try m.(i).(k) with Invalid Argument "index out of bounds" -> assert false 
+            try m.(k).(k) with Invalid Argument "index out of bounds" -> assert false in
             b.(i) <- M.sub b.(i) (M.mul factor b.(k));
             for j = k to length - 1 do
                 m.(i).(j) <- M.sub m.(i).(j) (M.mul factor m.(k).(j));
@@ -182,13 +187,13 @@ let solve m b =
         done;    
     done; 
 
-    let solution = Array.create length M.zero in
+    let solution = Array.create cols M.zero in
     for i = rows - 1 downto 0 do
         let sum = M.zero in
         for j = i + 1 to rows - 1 do
-            sum = M.add sum (M.mul m.(i).(j) solution.(j))
+            sum = M.add sum (M.mul try m.(i).(j) with Invalid Argument "index out of bounds" -> assert false solution.(j))
         done;
-        solution.(i) <- M.div (M.sub b.(i) sum) m.(i).(i);
+        solution.(i) <- M.div (M.sub b.(i) sum) try m.(i).(i) with Invalid Argument "index out of bounds" -> assert false;
     done;
     (m, solution)
 
@@ -214,9 +219,9 @@ assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
  *)
 let (m1, sol1) = FloatMatrix.solve 
-		   (FloatMatrix.of_array matrix3) (Array.create ~len:3 1.);;
+		   (FloatMatrix.of_array matrix3) (Array.create ~len:2 1.);;
 let (m2, sol2) = FloatMatrix.solve 
-		   (FloatMatrix.of_array matrix3) (Array.create ~len:3 1.);;
+		   (FloatMatrix.of_array matrix3) (Array.create ~len:2 1.);;
 
 let matrix4 = [|[|1.|]|];;
 let (m3, sol3) = FloatMatrix.solve (FloatMatrix.of_array matrix4) (Array.create ~len:1 1.);;
