@@ -16,12 +16,11 @@ sig
     val scalar : elt -> t -> t
     (* val mul : t -> t -> t
     val det : t -> int
-    val inverse : t -> t
-    val solve : t -> t -> t *)
+    val inverse : t -> t *)
+    val solve : t -> elt array -> t * elt array
     val compare : t -> t -> comparison
     val abs : elt -> elt
     val lu_decomp : t -> t * t
-    (* val solve : t -> elt array -> t * elt array *)
 end
 
 module type RING =
@@ -33,9 +32,11 @@ module type RING =
         val sub : t -> t -> t
         val mul : t -> t -> t
         val div : t -> t -> t
+        val comp : t -> t -> comparison
+        val abs_val : t -> t
     end
 
-module IntRing = 
+module IntRing  = 
     struct 
         type t = int
         let zero = 0
@@ -43,7 +44,12 @@ module IntRing =
         let add = (+)
         let sub = (-)
         let mul = ( * )         
-        let div = (/)   
+        let div = (/)  
+        let comp v1 v2 = if v1 = v2 then Equal else if v1 < v2 then Less
+			 else Greater
+        let abs_val v = match comp v zero with
+	  | Less -> mul v (sub zero 1)
+          | _ -> v
     end
 
 module FloatRing =
@@ -55,6 +61,11 @@ module FloatRing =
         let sub = (-.)
         let mul = ( *. )
         let div = (/.)
+        let comp v1 v2 = if v1 = v2 then Equal else if v1 < v2 then Less
+			 else Greater
+        let abs_val v = match comp v zero with 
+	  | Less -> mul v (sub zero one)
+          | _ -> v
     end
 
 module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
@@ -124,6 +135,8 @@ let abs v =
 let lu_decomp m =
     let rows = Array.length m in
     let cols = Array.length m.(0) in
+    if rows <> cols then raise IncompatibleDimensions
+    else
     let lower = zero rows cols in
     let upper = zero rows cols in
     for k = 0 to rows - 1 do
@@ -141,61 +154,71 @@ let lu_decomp m =
         done;
     done;
     (upper, lower)
-(*
+
 let solve m b =
     let length = Array.length b in
     let rows = Array.length m in
-    for i = 0 to length - 1 do
-        let max = i in
-        for j = i + 1 to length - 1 do
-            match compare (abs m.(j).(i)) (abs m.(max).(i)) with
-            | Greater -> max = i;
+    for k = 0 to length - 1 do
+        let max = ref k in
+        for i = k + 1 to length - 1 do
+            match M.comp (abs m.(i).(k)) (abs m.(!max).(k)) with
+            | Greater -> (max := i);
+            | _ -> ();
         done;
 
-        let temp_row = m.(i) in
-            m.(i) <- m.(max);
-            m.(max) <- temp_row;
-        let temp_b = b.(i) in
-            b.(i) <- b.(max);
-            b.(max) <- temp_b;
+        let temp_row = m.(k) in
+            m.(k) <- m.(!max);
+            m.(!max) <- temp_row;
+        let temp_b = b.(k) in
+            b.(k) <- b.(!max);
+            b.(!max) <- temp_b;
 
-        for j = i + 1 to length - 1 do
-            let factor = M.div m.(j).(i) m.(i).(i) in
-            b.(j) <- M.sub b.(j) (M.mul factor b.(i));
-            for p = i to length - 1 do
-                m.(j).(p) <- M.sub m.(j).(p) (M.mul factor m.(i).(p));
+        for i = k + 1 to length - 1 do
+            let factor = M.div m.(i).(k) m.(k).(k) in
+            b.(i) <- M.sub b.(i) (M.mul factor b.(k));
+            for j = k to length - 1 do
+                m.(i).(j) <- M.sub m.(i).(j) (M.mul factor m.(k).(j));
             done;
         done;    
     done; 
 
-    let solution = Array.make_matrix length 1 M.zero in
+    let solution = Array.create length M.zero in
     for i = rows - 1 downto 0 do
         let sum = M.zero in
         for j = i + 1 to rows - 1 do
-            sum = M.add sum (M.mul m.(i).(j) solution.(j).(0))
+            sum = M.add sum (M.mul m.(i).(j) solution.(j))
         done;
-        solution.(i).(0) <- M.div (M.sub b.(i) sum) m.(i).(i);
+        solution.(i) <- M.div (M.sub b.(i) sum) m.(i).(i);
     done;
-    (m, b)
- *)
+    (m, solution)
+
     end
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
 let matrix1 = [|[|4.; 3.|]; [|6.; 3.|]|];;
 let matrix2 = [|[|8.; 2.; 9.|]; [|4.; 9.; 4.|]; [|6.; 7.; 9.|]|];;
+let matrix3 = [|[|1.; 0.|]; [|0.; 1.|]|];;
 let (u1, l1) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix1);;
 let (u2, l2) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix2);;
+let (u3, l3) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix3);;
 assert (FloatMatrix.to_array u1 = [|[|4.; 3.|]; [|0.; -1.5|]|]);;
 assert (FloatMatrix.to_array l1 = [|[|1.; 0.|]; [|1.5; 1.|]|]);;
 assert (FloatMatrix.to_array u2 =
 	  [|[|8.; 2.; 9.|]; [|0.; 8.; -0.5|]; [|0.; 0.; 2.59375|]|]);;
 assert (FloatMatrix.to_array l2 = 
 	  [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
+assert (FloatMatrix.to_array u3 = matrix3);;
+assert (FloatMatrix.to_array l3 = matrix3);;
 (* Need Akshar's Multiplication function in order to test the two below
 assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
  *)
-(* let (m1, sol1) = FloatMatrix.solve matrix1 (Array.make_matrix 5 1 4.);;
-let (m2, sol2) = FloatMatrix.solve matrix2 (Array.make_matrix 3 1 1.);; *)
+let (m1, sol1) = FloatMatrix.solve 
+		   (FloatMatrix.of_array matrix3) (Array.create ~len:3 1.);;
+let (m2, sol2) = FloatMatrix.solve 
+		   (FloatMatrix.of_array matrix3) (Array.create ~len:3 1.);;
+
+let matrix4 = [|[|1.|]|];;
+let (m3, sol3) = FloatMatrix.solve (FloatMatrix.of_array matrix4) (Array.create ~len:1 1.);;
 
 
