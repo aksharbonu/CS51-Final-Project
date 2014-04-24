@@ -164,8 +164,7 @@ let solve m b =
     for k = 0 to length - 1 do
         let max = ref k in
         for i = k + 1 to rows - 1 do
-            match M.comp (abs try m.(i).(k) with Invalid Argument "index out of bounds" -> assert false) 
-            (abs try m.(!max).(k) with Invalid Argument "index out of bounds" -> assert false) with
+            match M.comp (abs m.(i).(k)) (abs m.(!max).(k)) with
             | Greater -> (max := i);
             | _ -> ();
         done;
@@ -178,8 +177,7 @@ let solve m b =
             b.(!max) <- temp_b;
 
         for i = k + 1 to length - 1 do
-            let factor = M.div try m.(i).(k) with Invalid Argument "index out of bounds" -> assert false 
-            try m.(k).(k) with Invalid Argument "index out of bounds" -> assert false in
+            let factor = M.div m.(i).(k) m.(k).(k) in
             b.(i) <- M.sub b.(i) (M.mul factor b.(k));
             for j = k to length - 1 do
                 m.(i).(j) <- M.sub m.(i).(j) (M.mul factor m.(k).(j));
@@ -191,9 +189,9 @@ let solve m b =
     for i = rows - 1 downto 0 do
         let sum = M.zero in
         for j = i + 1 to rows - 1 do
-            sum = M.add sum (M.mul try m.(i).(j) with Invalid Argument "index out of bounds" -> assert false solution.(j))
+            sum = M.add sum (M.mul m.(i).(j) solution.(j))
         done;
-        solution.(i) <- M.div (M.sub b.(i) sum) try m.(i).(i) with Invalid Argument "index out of bounds" -> assert false;
+        solution.(i) <- M.div (M.sub b.(i) sum) m.(i).(i);
     done;
     (m, solution)
 
