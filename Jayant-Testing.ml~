@@ -135,6 +135,7 @@ let abs v =
 let lu_decomp m =
     let rows = Array.length m in
     let cols = Array.length m.(0) in
+    (* LU_decomposition only works for square matrices *)
     if rows <> cols then raise IncompatibleDimensions
     else
     let lower = zero rows cols in
@@ -158,10 +159,15 @@ let lu_decomp m =
 let solve m b =
     let length = Array.length b in
     let rows = Array.length m in
-    if length <> rows then raise IncompatibleDimensions
-    else
     let cols = Array.length m.(0) in
-    for k = 0 to length - 1 do
+   
+    (* Algorithm works for invertible, square matrices - noninvertible 
+       matrices might not yield a solution *)
+    if length <> rows || rows <> cols then raise IncompatibleDimensions
+    else
+
+    (* Find the largest value in a row (the pivot row) for the kth column *)
+    for k = 0 to cols - 1 do
         let max = ref k in
         for i = k + 1 to rows - 1 do
             match M.comp (abs m.(i).(k)) (abs m.(!max).(k)) with
@@ -169,6 +175,7 @@ let solve m b =
             | _ -> ();
         done;
 
+	(* Swap the pivot row with the top row we are working with*)
         let temp_row = m.(k) in
             m.(k) <- m.(!max);
             m.(!max) <- temp_row;
@@ -176,6 +183,7 @@ let solve m b =
             b.(k) <- b.(!max);
             b.(!max) <- temp_b;
 
+	(* Pivot between A and b - row-reduce without leading ones *)
         for i = k + 1 to length - 1 do
             let factor = M.div m.(i).(k) m.(k).(k) in
             b.(i) <- M.sub b.(i) (M.mul factor b.(k));
@@ -185,13 +193,14 @@ let solve m b =
         done;    
     done; 
 
+    (* Substitute back to yield the solution vector *)
     let solution = Array.create cols M.zero in
-    for i = rows - 1 downto 0 do
-        let sum = M.zero in
+    for i = cols - 1 downto 0 do
+        let sum = ref M.zero in
         for j = i + 1 to rows - 1 do
-            sum = M.add sum (M.mul m.(i).(j) solution.(j))
+            sum := M.add !sum (M.mul m.(i).(j) solution.(j));
         done;
-        solution.(i) <- M.div (M.sub b.(i) sum) m.(i).(i);
+        solution.(i) <- M.div (M.sub b.(i) !sum) m.(i).(i);
     done;
     (m, solution)
 
@@ -216,12 +225,12 @@ assert (FloatMatrix.to_array l3 = matrix3);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
  *)
-let (m1, sol1) = FloatMatrix.solve 
-		   (FloatMatrix.of_array matrix3) (Array.create ~len:2 1.);;
-let (m2, sol2) = FloatMatrix.solve 
-		   (FloatMatrix.of_array matrix3) (Array.create ~len:2 1.);;
+let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) (Array.create 2 1.);;
+assert (sol1 = [|1.; 1.|]);;
 
-let matrix4 = [|[|1.|]|];;
-let (m3, sol3) = FloatMatrix.solve (FloatMatrix.of_array matrix4) (Array.create ~len:1 1.);;
+let matrix4 = [|[|0.; 1.; 1.|]; [|2.; 4.; -2.;|]; [|0.; 3.; 15.|]|];;
+let (m4, sol4) = FloatMatrix.solve
+		   (FloatMatrix.of_array matrix4) ([|4.; 2.; 36.|]);;
+assert (sol4 = [|-1.; 2.; 2.|]);;
 
 

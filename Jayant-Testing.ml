@@ -14,8 +14,8 @@ sig
     val add : t -> t -> t
     val sub : t -> t -> t
     val scalar : elt -> t -> t
-    (* val mul : t -> t -> t
-    val det : t -> int
+    val det : t -> elt
+    (*val mul : t -> t -> t
     val inverse : t -> t *)
     val solve : t -> elt array -> t * elt array
     val compare : t -> t -> comparison
@@ -132,6 +132,27 @@ let abs v =
   | _ -> v
 ;;
 
+let rec det m = 
+  let dim = Array.length m in
+  let cols = Array.length m.(0) in
+  (* Determinant can only be computed of square matrices *)
+  if dim <> cols then raise IncompatibleDimensions
+  else
+    if dim = 1 then m.(0).(0)
+    else
+    if dim = 2 then M.sub (M.mul m.(0).(0) m.(1).(1)) 
+			  (M.mul m.(0).(1) m.(1).(0))
+    else 
+    let next_mat = zero (dim - 1) (dim - 1) in
+    for i = 1 to dim - 1 do
+      for j = 1 to dim - 1 do
+        next_mat.(i-1).(j-1) <- m.(i).(j);
+      done;
+    done;
+    M.mul m.(0).(0) (det next_mat)
+;;
+      
+
 let lu_decomp m =
     let rows = Array.length m in
     let cols = Array.length m.(0) in
@@ -165,7 +186,8 @@ let solve m b =
        matrices might not yield a solution *)
     if length <> rows || rows <> cols then raise IncompatibleDimensions
     else
-
+    if det m = 0 then raise "not an invertible matrix"
+    else
     (* Find the largest value in a row (the pivot row) for the kth column *)
     for k = 0 to cols - 1 do
         let max = ref k in
@@ -208,8 +230,10 @@ let solve m b =
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
 let matrix1 = [|[|4.; 3.|]; [|6.; 3.|]|];;
+assert (FloatMatrix.det (FloatMatrix.of_array matrix1) = -6.);;
 let matrix2 = [|[|8.; 2.; 9.|]; [|4.; 9.; 4.|]; [|6.; 7.; 9.|]|];;
 let matrix3 = [|[|1.; 0.|]; [|0.; 1.|]|];;
+assert (FloatMatrix.det (FloatMatrix.of_array matrix3) = 1.);;
 let (u1, l1) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix1);;
 let (u2, l2) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix2);;
 let (u3, l3) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix3);;
