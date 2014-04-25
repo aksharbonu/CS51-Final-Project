@@ -28,6 +28,7 @@ module type RING =
         type t
         val zero : t
         val one : t
+        val epsilon : t
         val add : t -> t -> t
         val sub : t -> t -> t
         val mul : t -> t -> t
@@ -57,6 +58,8 @@ module FloatRing =
         type t = float
         let zero = 0.
         let one = 1.
+        (* Small value for comparisons - cannot use = *)
+        let epsilon = 0.0001
         let add = (+.)
         let sub = (-.)
         let mul = ( *. )
@@ -186,7 +189,8 @@ let solve m b =
        matrices might not yield a solution *)
     if length <> rows || rows <> cols then raise IncompatibleDimensions
     else
-    if det m = 0 then raise "not an invertible matrix"
+    if det m < M.epsilon then 
+      raise (failwith "not an invertible matrix - might not have a solution")
     else
     (* Find the largest value in a row (the pivot row) for the kth column *)
     for k = 0 to cols - 1 do
