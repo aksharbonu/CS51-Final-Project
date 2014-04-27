@@ -287,7 +287,8 @@ assert (FloatMatrix.to_array l3 = matrix3);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
  *)
-let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) (Array.create 2 1.);;
+let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) 
+				   (Array.create 2 1.);;
 assert (sol1 = [|1.; 1.|]);;
 
 (* Should work - need to fix determinant calculation, matrix is invertible *)
