@@ -17,7 +17,6 @@ sig
     val det : t -> elt
     val mul : t -> t -> t
     val solve : t -> elt array -> t * elt array
-    val compare : t -> t -> comparison
     val lu_decomp : t -> t * t * t
 end
 
@@ -40,7 +39,7 @@ module IntRing  =
     struct 
         type t = int
         let zero = 0
-        let epsilon = 0.0001
+        let epsilon = 0
         let one = 1
         let add = (+)
         let sub = (-)
@@ -65,7 +64,7 @@ module FloatRing =
         let div = (/.)
         let comp v1 v2 = if v1 = v2 then Equal else if v1 < v2 then Less
 			 else Greater
-        let abs_val v = abs_float v
+        let abs_val v = Float.abs v
         let print_elt s = print_endline (Float.to_string s)
     end
 
@@ -91,21 +90,22 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
             result;;
 
+        let dim m1 = Array.length m1, Array.length m1.(0);; 
+
         let scalar value m1 =
-            let row = Array.length m1 in
-            let col = Array.length m1.(0) in 
+            let row, col = dim m1 in
             let result = zero row col in
-                for i = 0 to Array.length m1 - 1 do
-                    for j = 0 to Array.length m1.(0) - 1 do
+                for i = 0 to row - 1 do
+                    for j = 0 to col - 1 do
                         result.(i).(j) <- M.mul m1.(i).(j) value
                     done;
                 done;
             result;;
 
+
         let do_operation m1 m2 operation = 
-            let row = Array.length m1 in
-            let col = Array.length m1.(0) in 
-            if row = Array.length m2 && col = Array.length m2.(0) then
+            let row, col = dim m1 in
+            if (row, col) = dim m2 then
                 (let result = zero row col in
                 for i = 0 to row - 1 do
                     for j = 0 to col - 1 do
@@ -121,9 +121,6 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
         let sub m1 m2 = 
                 do_operation m1 m2 M.sub;;
 
-        let compare v1 v2 =
-            if v1 = v2 then Equal else if v1 < v2 then Less else Greater
-
         (* A method that swaps values in two arrays from one index to another *)
         let swap_array_from_to a1 a2 first last =
             for i = first to last do
@@ -134,21 +131,20 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
         ;;
 
         let rec det m =
-            let dim = Array.length m in
-            let cols = Array.length m.(0) in
+            let row, col = dim m in
             (* Determinant can only be computed for square matrices *)
-            if dim <> cols then raise IncompatibleDimensions
+            if row <> col then raise IncompatibleDimensions
             else
-                if dim = 1 then m.(0).(0)
-                else if dim = 2 then 
+                if row = 1 then m.(0).(0)
+                else if row = 2 then 
                     M.sub (M.mul m.(0).(0) m.(1).(1)) 
         		      	  (M.mul m.(0).(1) m.(1).(0))
                 else 
                     let determinant = ref M.zero in
-                    for i = 0 to dim - 1 do
-                        let next_mat = zero (dim - 1) (dim - 1) in
-                        for j = 1 to dim - 1 do
-                            for k = 0 to dim - 1 do
+                    for i = 0 to row - 1 do
+                        let next_mat = zero (row - 1) (row - 1) in
+                        for j = 1 to row - 1 do
+                            for k = 0 to row - 1 do
                                 if k < i then next_mat.(j-1).(k) <- m.(j).(k)
                                 else if k > i then next_mat.(j-1).(k-1) <- m.(j).(k)
                             done;
@@ -166,34 +162,33 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                   
 
         let lu_decomp m =
-            let rows = Array.length m in
-            let cols = Array.length m.(0) in
+            let row, col = dim m in
             (* LU_decomposition only works for square matrices *)
-            if rows <> cols then raise IncompatibleDimensions
+            if row <> col then raise IncompatibleDimensions
             else
-                let lower = identity rows in
+                let lower = identity row in
                 let upper = m in
-                let pivot_mat = identity rows in
+                let pivot_mat = identity row in
            
             (* Find the largest value in a row (the pivot row) for the kth column *)
-            for k = 0 to rows - 1 do
+            for k = 0 to row - 1 do
               let max = ref k in
-                for i = k + 1 to cols - 1 do
+                for i = k + 1 to col - 1 do
                     match M.comp (M.abs_val m.(i).(k)) (M.abs_val m.(!max).(k)) with
                     | Greater -> (max := i);
                     | _ -> ();
                 done;
 
     	       (* Swap the pivot row with the top row we are working with *)
-                swap_array_from_to upper.(k) upper.(!max) k (rows - 1);
+                swap_array_from_to upper.(k) upper.(!max) k (row - 1);
                 swap_array_from_to lower.(k) lower.(!max) 0 (k - 1);
     	       let temp_row = pivot_mat.(k) in
                 pivot_mat.(k) <- pivot_mat.(!max);
                 pivot_mat.(!max) <- temp_row;
         
-                for i = k + 1 to rows - 1 do
+                for i = k + 1 to row - 1 do
                     lower.(i).(k) <- M.div upper.(i).(k) upper.(k).(k);
-                    for j = k to rows - 1 do
+                    for j = k to row - 1 do
                         upper.(i).(j) <- 
     		              (M.sub upper.(i).(j) (M.mul lower.(i).(k) upper.(k).(j)));
                     done;
@@ -203,25 +198,24 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         let solve m b =
             let length = Array.length b in
-            let rows = Array.length m in
-            let cols = Array.length m.(0) in
+            let row, col = dim m in
            
             (* Algorithm works for invertible, square matrices - noninvertible 
                matrices might not yield a solution *)
-            if length <> rows || rows <> cols then raise IncompatibleDimensions
+            if length <> row || row <> col then raise IncompatibleDimensions
             else
-            if M.abs_val (det m) < M.epsilon then 
+            if M.abs_val (det m) <= M.epsilon then 
               raise (failwith "not an invertible matrix - might not have a solution")
             else
             (* Find the largest value in a row (the pivot row) for the kth column *)
-            for k = 0 to cols - 1 do
+            for k = 0 to col - 1 do
                 let max = ref k in
-                for i = k + 1 to rows - 1 do
+                for i = k + 1 to row - 1 do
                     match M.comp (M.abs_val m.(i).(k)) (M.abs_val m.(!max).(k)) with
                     | Greater -> (max := i);
                     | _ -> ();
                 done;
-
+                
         	(* Swap the pivot row with the top row we are working with *)
                 let temp_row = m.(k) in
                     m.(k) <- m.(!max);
@@ -241,10 +235,10 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done; 
 
             (* Substitute back to yield the solution vector *)
-            let solution = Array.create cols M.zero in
-            for i = cols - 1 downto 0 do
+            let solution = Array.create col M.zero in
+            for i = col - 1 downto 0 do
                 let sum = ref M.zero in
-                for j = i + 1 to rows - 1 do
+                for j = i + 1 to row - 1 do
                     sum := M.add !sum (M.mul m.(i).(j) solution.(j));
                 done;
                 solution.(i) <- M.div (M.sub b.(i) !sum) m.(i).(i);
@@ -376,14 +370,19 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 (* LU & GAUSSIAN TESTING *)
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
+
 let matrix1 = [|[|4.; 3.|]; [|6.; 3.|]|];;
 assert (FloatMatrix.det (FloatMatrix.of_array matrix1) = -6.);;
+
 let matrix2 = [|[|8.; 2.; 9.|]; [|4.; 9.; 4.|]; [|6.; 7.; 9.|]|];;
 let matrix3 = [|[|1.; 0.|]; [|0.; 1.|]|];;
+
 assert (FloatMatrix.det (FloatMatrix.of_array matrix3) = 1.);;
+
 let (u1, l1, p1) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix1);;
 let (u2, l2, p2) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix2);;
 let (u3, l3, p3) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix3);;
+
 assert (FloatMatrix.to_array u1 = [|[|6.; 3.|]; [|0.; 1.|]|]);;
 assert (FloatMatrix.to_array l1 = [|[|1.; 0.|]; [|(2./.3.); 1.|]|]);;
 assert (FloatMatrix.to_array u2 =
@@ -392,14 +391,12 @@ assert (FloatMatrix.to_array l2 =
 	  [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
 assert (FloatMatrix.to_array u3 = matrix3);;
 assert (FloatMatrix.to_array l3 = matrix3);;
-(* Need Akshar's Multiplication function in order to test the two below
 assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
 assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
- *)
+
 let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) (Array.create 2 1.);;
 assert (sol1 = [|1.; 1.|]);;
 
-(* Should work - need to fix determinant calculation, matrix is invertible *)
 let matrix4 = [|[|0.; 1.; 1.|]; [|2.; 4.; -2.;|]; [|0.; 3.; 15.|]|];;
 let (m4, sol4) = FloatMatrix.solve
 		   (FloatMatrix.of_array matrix4) ([|4.; 2.; 36.|]);;
