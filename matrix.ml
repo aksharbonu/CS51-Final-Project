@@ -52,9 +52,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         let identity n =
             let result = zero ~dimx:n ~dimy:n in
-            for i = 0 to n - 1 do
-                result.(i).(i) <- M.one
-            done;
+            Array.iteri result ~f:(fun index row -> row.(index) <- M.one);
             result;;
 
         (* Multiply every element in a matrix by a scalar *)
