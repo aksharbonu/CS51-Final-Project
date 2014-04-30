@@ -138,7 +138,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 if row = 1 then m.(0).(0)
                 else if row = 2 then 
                     M.sub (M.mul m.(0).(0) m.(1).(1)) 
-        		      	  (M.mul m.(0).(1) m.(1).(0))
+                          (M.mul m.(0).(1) m.(1).(0))
                 else 
                     let determinant = ref M.zero in
                     for i = 0 to row - 1 do
@@ -155,7 +155,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
               if (i mod 2 = 1) then sign := (M.sub M.zero M.one);
 
               determinant := M.add !determinant 
-        			   (M.mul (M.mul !sign m.(0).(i)) (det next_mat));
+                       (M.mul (M.mul !sign m.(0).(i)) (det next_mat));
             done;
             !determinant
         ;;
@@ -167,8 +167,13 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             if row <> col then raise IncompatibleDimensions
             else
                 let lower = identity row in
-                let upper = m in
                 let pivot_mat = identity row in
+                (* Create a copy of the matrix passed in to not alter the original values *)
+                let upper = zero row row in
+                for i = 0 to row - 1 do
+                    upper.(i) <- Array.copy m.(i);
+                done;
+
            
             (* Find the largest value in a row (the pivot row) for the kth column *)
             for k = 0 to row - 1 do
@@ -179,10 +184,10 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                     | _ -> ();
                 done;
 
-    	       (* Swap the pivot row with the top row we are working with *)
+               (* Swap the pivot row with the top row we are working with *)
                 swap_array_from_to upper.(k) upper.(!max) k (row - 1);
                 swap_array_from_to lower.(k) lower.(!max) 0 (k - 1);
-    	       let temp_row = pivot_mat.(k) in
+               let temp_row = pivot_mat.(k) in
                 pivot_mat.(k) <- pivot_mat.(!max);
                 pivot_mat.(!max) <- temp_row;
         
@@ -190,7 +195,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                     lower.(i).(k) <- M.div upper.(i).(k) upper.(k).(k);
                     for j = k to row - 1 do
                         upper.(i).(j) <- 
-    		              (M.sub upper.(i).(j) (M.mul lower.(i).(k) upper.(k).(j)));
+                          (M.sub upper.(i).(j) (M.mul lower.(i).(k) upper.(k).(j)));
                     done;
                 done;     
             done;
@@ -216,7 +221,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                     | _ -> ();
                 done;
                 
-        	(* Swap the pivot row with the top row we are working with *)
+            (* Swap the pivot row with the top row we are working with *)
                 let temp_row = m.(k) in
                     m.(k) <- m.(!max);
                     m.(!max) <- temp_row;
@@ -224,7 +229,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                     b.(k) <- b.(!max);
                     b.(!max) <- temp_b;
 
-        	(* Pivot between A and b - row-reduce without leading ones *)
+            (* Pivot between A and b - row-reduce without leading ones *)
                 for i = k + 1 to length - 1 do
                     let factor = M.div m.(i).(k) m.(k).(k) in
                     b.(i) <- M.sub b.(i) (M.mul factor b.(k));
@@ -392,8 +397,8 @@ assert (FloatMatrix.to_array l2 =
 	  [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
 assert (FloatMatrix.to_array u3 = matrix3);;
 assert (FloatMatrix.to_array l3 = matrix3);;
-assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
-assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
+assert (FloatMatrix.to_array (FloatMatrix.mul l1 u1) = FloatMatrix.to_array (FloatMatrix.mul p1 (FloatMatrix.of_array matrix1)));;
+assert (FloatMatrix.to_array (FloatMatrix.mul l2 u2) = FloatMatrix.to_array (FloatMatrix.mul p2 (FloatMatrix.of_array matrix2)));;
 
 let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) (Array.create 2 1.);;
 assert (sol1 = [|1.; 1.|]);;

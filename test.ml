@@ -25,8 +25,8 @@ assert (FloatMatrix.to_array l2 =
       [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
 assert (FloatMatrix.to_array u3 = matrix3);;
 assert (FloatMatrix.to_array l3 = matrix3);;
-assert (FloatMatrix.to_array (FloatMatrix.mul u1 l1) = matrix1);;
-assert (FloatMatrix.to_array (FloatMatrix.mul u2 l2) = matrix2);;
+assert (FloatMatrix.to_array (FloatMatrix.mul l1 u1) = FloatMatrix.to_array (FloatMatrix.mul p1 (FloatMatrix.of_array matrix1)));;
+assert (FloatMatrix.to_array (FloatMatrix.mul l2 u2) = FloatMatrix.to_array (FloatMatrix.mul p2 (FloatMatrix.of_array matrix2)));;
 
 let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) (Array.create 2 1.);;
 assert (sol1 = [|1.; 1.|]);;
@@ -51,7 +51,12 @@ assert (FloatMatrix.to_array p5 =
 
 let matrix1f = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
 let matrix2f = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f);;
+assert (FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f) = 
+		[|[|18.; 18.; 18.; 18.; 18.|]; 
+		[|18.; 18.; 18.; 18.; 18.|];
+  		[|18.; 18.; 18.; 18.; 18.|]; 
+  		[|18.; 18.; 18.; 18.; 18.|];
+  		[|18.; 18.; 18.; 18.; 18.|]|]);;
 
 let matrix3f = FloatMatrix.of_array 
 [|
@@ -70,14 +75,25 @@ let matrix4f = FloatMatrix.of_array
 [|-5.; -6.; -7.; -8.; -9.|]; 
 |];;
 
-FloatMatrix.to_array (FloatMatrix.mul matrix3f matrix4f);;
+assert (FloatMatrix.to_array (FloatMatrix.mul matrix3f matrix4f) = 
+		[|[|-12.; -16.; -20.; -24.; -28.|]; 
+		[|-12.; -16.; -20.; -24.; -28.|];
+  		[|12.; 16.; 20.; 24.; 28.|]; 
+  		[|12.; 16.; 20.; 24.; 28.|];
+  		[|-12.; -16.; -20.; -24.; -28.|]|]);;
 
 (* Test IntRing *)
 
 module IntMatrix = MatrixFunctor (IntRing);;
 let matrix1i = IntMatrix.of_array (Array.make_matrix 5 3 2);;
 let matrix2i = IntMatrix.of_array (Array.make_matrix 3 5 3);;
-IntMatrix.to_array (IntMatrix.mul matrix1i matrix2i);;
+
+assert (IntMatrix.to_array (IntMatrix.mul matrix1i matrix2i) = 
+		[|[|18; 18; 18; 18; 18|]; 
+		[|18; 18; 18; 18; 18|]; 
+		[|18; 18; 18; 18; 18|];
+  		[|18; 18; 18; 18; 18|]; 
+  		[|18; 18; 18; 18; 18|]|]);;
 
 let matrix3i = IntMatrix.of_array 
 [|
@@ -96,4 +112,9 @@ let matrix4i = IntMatrix.of_array
 [|-5; -6; -7; -8; -9|]; 
 |];;
 
-IntMatrix.to_array (IntMatrix.mul matrix3i matrix4i);;
+assert (IntMatrix.to_array (IntMatrix.mul matrix3i matrix4i) = 
+		[|[|-12; -16; -20; -24; -28|]; 
+		[|-12; -16; -20; -24; -28|];
+  		[|12; 16; 20; 24; 28|]; 
+  		[|12; 16; 20; 24; 28|];
+  		[|-12; -16; -20; -24; -28|]|]);;
