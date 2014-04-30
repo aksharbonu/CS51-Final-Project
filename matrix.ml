@@ -1,6 +1,7 @@
 open Core.Std
 open Ring
 
+(* Define a generic matrix type and its operations *)
 module type MATRIX =
 sig
     exception IncompatibleDimensions
@@ -19,6 +20,7 @@ sig
     val lu_decomp : t -> t * t * t
 end
 
+(* A functor that takes in a RING that specifies the type of element in the matrix, and outputs a matrix module *)
 module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
     struct
 
@@ -26,6 +28,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         type elt = M.t
 
+        (* Use 2-dimensional arrays to represent matrices - easy to access indices *)
         type t = elt array array 
 
         let dim m1 = Array.length m1, Array.length m1.(0);; 
@@ -33,6 +36,8 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
         (* 
             Checks to make sure basic invariant is followed:
             - In every row, same number of elements
+
+            The following two methods allow us to convert between the abstract type and arrays
         *)
 
         let of_array m = 
@@ -42,6 +47,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         let to_array = ident;;
 
+        (* Functions to create generic matrices - zero and identity *)
         let zero ~dimx:n ~dimy:m = Array.make_matrix ~dimx:n ~dimy:m M.zero;;
 
         let identity n =
@@ -51,8 +57,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
             result;;
 
-        
-
+        (* Multiply every element in a matrix by a scalar *)
         let scalar value m1 =
             let row, col = dim m1 in
             let result = zero ~dimx:row ~dimy:col in
@@ -63,7 +68,10 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 done;
             result;;
 
-
+        (* 
+            Do a certain operation to every corresponding element of two matrices.
+            Both 'add' and 'sub' below use this method.
+         *)
         let do_operation m1 m2 operation = 
             let row, col = dim m1 in
             if (row, col) = dim m2 then
@@ -91,6 +99,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
         ;;
 
+        (* Computes the determinant of a (square) matrix *)
         let rec det m =
             let row, col = dim m in
             (* Determinant can only be computed for square matrices *)
@@ -121,7 +130,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             !determinant
         ;;
                   
-
+        (* Computes the LU decomposition of a matrix such that PM = LU at the end *)
         let lu_decomp m =
             let row, col = dim m in
             (* LU_decomposition only works for square matrices *)
@@ -162,6 +171,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
             (upper, lower, pivot_mat)
 
+        (* Solves a linear system when given a square matrix m and a solution vector b_original *)
         let solve m b_original =
             let length = Array.length b_original in
             let row, col = dim m in

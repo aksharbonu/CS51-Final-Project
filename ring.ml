@@ -1,7 +1,9 @@
 open Core.Std
 
+(* To compare elements of type t *)
 type comparison = Less | Equal | Greater;;
 
+(* A generic module to define element types in the matrices *)
 module type RING =
     sig
         type t
@@ -17,6 +19,7 @@ module type RING =
         val print_elt : t -> unit
     end
 
+(* A module definition to use integers in matrices *)
 module IntRing  = 
     struct 
         type t = int
@@ -33,6 +36,7 @@ module IntRing  =
         let print_elt s = print_endline (Int.to_string s)
     end
 
+(* A module definition to use floating-point numbers in matrices *)
 module FloatRing =
     struct
         type t = float
