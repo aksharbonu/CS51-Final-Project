@@ -1,8 +1,5 @@
 open Core.Std
 
-(* To compare elements of type t *)
-type comparison = Less | Equal | Greater;;
-
 (* A generic module to define element types in the matrices *)
 module type RING =
     sig
@@ -14,7 +11,7 @@ module type RING =
         val sub : t -> t -> t
         val mul : t -> t -> t
         val div : t -> t -> t
-        val comp : 'a -> 'a -> comparison
+        val comp : 'a -> 'a -> Ordering.t
         val abs_val : t -> t
         val print_elt : t -> unit
     end
