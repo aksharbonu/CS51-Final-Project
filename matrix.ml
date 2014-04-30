@@ -15,7 +15,7 @@ sig
     val scalar : elt -> t -> t
     val det : t -> elt
     val mul : t -> t -> t
-    val solve : t -> elt array -> t * elt array
+    val solve : t -> t -> t * t
     val lu_decomp : t -> t * t * t
 end
 
@@ -28,7 +28,17 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         type t = elt array array 
 
-        let of_array = ident;;
+        let dim m1 = Array.length m1, Array.length m1.(0);; 
+
+        (* 
+            Checks to make sure basic invariant is followed:
+            - In every row, same number of elements
+        *)
+
+        let of_array m = 
+            let col = Array.length m.(0) in 
+            if Array.for_all m ~f:(fun row -> col = Array.length row) then ident m
+            else raise IncompatibleDimensions;;
 
         let to_array = ident;;
 
@@ -41,7 +51,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
             result;;
 
-        let dim m1 = Array.length m1, Array.length m1.(0);; 
+        
 
         let scalar value m1 =
             let row, col = dim m1 in
@@ -152,8 +162,8 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
             (upper, lower, pivot_mat)
 
-        let solve m b =
-            let length = Array.length b in
+        let solve m b_original =
+            let length = Array.length b_original in
             let row, col = dim m in
            
             (* Algorithm works for invertible, square matrices - noninvertible 
@@ -163,6 +173,12 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             if M.abs_val (det m) <= M.epsilon then 
               raise (failwith "not an invertible matrix - might not have a solution")
             else
+            
+            (* Create a copy of the matrix passed in to not alter the original values *)
+            let b = zero ~dimx:length ~dimy:1 in
+            for i = 0 to length - 1 do
+                    b.(i) <- Array.copy b_original.(i);
+                done;
             (* Find the largest value in a row (the pivot row) for the kth column *)
             for k = 0 to col - 1 do
                 let max = ref k in
@@ -176,14 +192,14 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 let temp_row = m.(k) in
                     m.(k) <- m.(!max);
                     m.(!max) <- temp_row;
-                let temp_b = b.(k) in
-                    b.(k) <- b.(!max);
-                    b.(!max) <- temp_b;
+                let temp_b = b.(k).(0) in
+                    b.(k).(0) <- b.(!max).(0);
+                    b.(!max).(0) <- temp_b;
 
         	(* Pivot between A and b - row-reduce without leading ones *)
                 for i = k + 1 to length - 1 do
                     let factor = M.div m.(i).(k) m.(k).(k) in
-                    b.(i) <- M.sub b.(i) (M.mul factor b.(k));
+                    b.(i).(0) <- M.sub b.(i).(0) (M.mul factor b.(k).(0));
                     for j = k to length - 1 do
                         m.(i).(j) <- M.sub m.(i).(j) (M.mul factor m.(k).(j));
                     done;
@@ -191,13 +207,13 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done; 
 
             (* Substitute back to yield the solution vector *)
-            let solution = Array.create col M.zero in
+            let solution = zero ~dimx:length ~dimy:1 in
             for i = col - 1 downto 0 do
                 let sum = ref M.zero in
                 for j = i + 1 to row - 1 do
-                    sum := M.add !sum (M.mul m.(i).(j) solution.(j));
+                    sum := M.add !sum (M.mul m.(i).(j) solution.(j).(0));
                 done;
-                solution.(i) <- M.div (M.sub b.(i) !sum) m.(i).(i);
+                solution.(i).(0) <- M.div (M.sub b.(i).(0) !sum) m.(i).(i);
             done;
             (m, solution)
 

@@ -9,14 +9,14 @@ sig
     type t
     val of_array: elt array array -> t
     val to_array: t -> elt array array
-    val zero : int -> int -> t
+    val zero : dimx:int -> dimy:int -> t
     val identity : int -> t
     val add : t -> t -> t
     val sub : t -> t -> t
     val scalar : elt -> t -> t
     val det : t -> elt
     val mul : t -> t -> t
-    val solve : t -> elt array -> t * elt array
+    val solve : t -> t -> t * t
     val lu_decomp : t -> t * t * t
 end
 
@@ -77,24 +77,34 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         type t = elt array array 
 
-        let of_array = ident;;
+        let dim m1 = Array.length m1, Array.length m1.(0);; 
+
+        (* 
+            Checks to make sure basic invariant is followed:
+            - In every row, same number of elements
+        *)
+
+        let of_array m = 
+            let col = Array.length m.(0) in 
+            if Array.for_all m ~f:(fun row -> col = Array.length row) then ident m
+            else raise IncompatibleDimensions;;
 
         let to_array = ident;;
 
-        let zero n m = Array.make_matrix n m M.zero;;
+        let zero ~dimx:n ~dimy:m = Array.make_matrix ~dimx:n ~dimy:m M.zero;;
 
         let identity n =
-            let result = zero n n in
+            let result = zero ~dimx:n ~dimy:n in
             for i = 0 to n - 1 do
                 result.(i).(i) <- M.one
             done;
             result;;
 
-        let dim m1 = Array.length m1, Array.length m1.(0);; 
+        
 
         let scalar value m1 =
             let row, col = dim m1 in
-            let result = zero row col in
+            let result = zero ~dimx:row ~dimy:col in
                 for i = 0 to row - 1 do
                     for j = 0 to col - 1 do
                         result.(i).(j) <- M.mul m1.(i).(j) value
@@ -106,7 +116,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
         let do_operation m1 m2 operation = 
             let row, col = dim m1 in
             if (row, col) = dim m2 then
-                (let result = zero row col in
+                (let result = zero ~dimx:row ~dimy:col in
                 for i = 0 to row - 1 do
                     for j = 0 to col - 1 do
                         result.(i).(j) <- operation m1.(i).(j) m2.(i).(j)
@@ -142,7 +152,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 else 
                     let determinant = ref M.zero in
                     for i = 0 to row - 1 do
-                        let next_mat = zero (row - 1) (row - 1) in
+                        let next_mat = zero ~dimx:(row - 1) ~dimy:(row - 1) in
                         for j = 1 to row - 1 do
                             for k = 0 to row - 1 do
                                 if k < i then next_mat.(j-1).(k) <- m.(j).(k)
@@ -169,7 +179,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 let lower = identity row in
                 let pivot_mat = identity row in
                 (* Create a copy of the matrix passed in to not alter the original values *)
-                let upper = zero row row in
+                let upper = zero ~dimx:row ~dimy:row in
                 for i = 0 to row - 1 do
                     upper.(i) <- Array.copy m.(i);
                 done;
@@ -201,8 +211,8 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done;
             (upper, lower, pivot_mat)
 
-        let solve m b =
-            let length = Array.length b in
+        let solve m b_original =
+            let length = Array.length b_original in
             let row, col = dim m in
            
             (* Algorithm works for invertible, square matrices - noninvertible 
@@ -212,6 +222,12 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             if M.abs_val (det m) <= M.epsilon then 
               raise (failwith "not an invertible matrix - might not have a solution")
             else
+            
+            (* Create a copy of the matrix passed in to not alter the original values *)
+            let b = zero ~dimx:length ~dimy:1 in
+            for i = 0 to length - 1 do
+                    b.(i) <- Array.copy b_original.(i);
+                done;
             (* Find the largest value in a row (the pivot row) for the kth column *)
             for k = 0 to col - 1 do
                 let max = ref k in
@@ -225,14 +241,14 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 let temp_row = m.(k) in
                     m.(k) <- m.(!max);
                     m.(!max) <- temp_row;
-                let temp_b = b.(k) in
-                    b.(k) <- b.(!max);
-                    b.(!max) <- temp_b;
+                let temp_b = b.(k).(0) in
+                    b.(k).(0) <- b.(!max).(0);
+                    b.(!max).(0) <- temp_b;
 
             (* Pivot between A and b - row-reduce without leading ones *)
                 for i = k + 1 to length - 1 do
                     let factor = M.div m.(i).(k) m.(k).(k) in
-                    b.(i) <- M.sub b.(i) (M.mul factor b.(k));
+                    b.(i).(0) <- M.sub b.(i).(0) (M.mul factor b.(k).(0));
                     for j = k to length - 1 do
                         m.(i).(j) <- M.sub m.(i).(j) (M.mul factor m.(k).(j));
                     done;
@@ -240,13 +256,13 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             done; 
 
             (* Substitute back to yield the solution vector *)
-            let solution = Array.create col M.zero in
+            let solution = zero ~dimx:length ~dimy:1 in
             for i = col - 1 downto 0 do
                 let sum = ref M.zero in
                 for j = i + 1 to row - 1 do
-                    sum := M.add !sum (M.mul m.(i).(j) solution.(j));
+                    sum := M.add !sum (M.mul m.(i).(j) solution.(j).(0));
                 done;
-                solution.(i) <- M.div (M.sub b.(i) !sum) m.(i).(i);
+                solution.(i).(0) <- M.div (M.sub b.(i).(0) !sum) m.(i).(i);
             done;
             (m, solution)
 
@@ -266,9 +282,9 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             else 
             (match row mod 2 = 0, col mod 2 = 0 with
             | true, true -> m1
-            | true, false -> join (zero row (col + 1)) m1 0 0 
-            | false, true -> join (zero (row + 1) col) m1 0 0
-            | _, _ ->  join (zero (row + 1) (col + 1)) m1 0 0);;
+            | true, false -> join (zero ~dimx:row ~dimy:(col + 1)) m1 0 0 
+            | false, true -> join (zero ~dimx:(row + 1) ~dimy:col) m1 0 0
+            | _, _ ->  join (zero ~dimx:(row + 1) ~dimy:(col + 1)) m1 0 0);;
 
         (* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
         let split parent child row col =
@@ -284,7 +300,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             (* Saves rows & columns of matrices for future use*)
             let row1, col1 = dim matrix1 in
             let row2, col2 = dim matrix2 in
-            let result = zero row1 row1 in
+            let result = zero ~dimx:row1 ~dimy:row1 in
             if row1 = 1 then 
                 (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
             else
@@ -295,14 +311,14 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
                 (* Create halves *)
 
-                let a11 = zero half_row1 half_col1 in
-                let a12 = zero half_row1 half_col1 in
-                let a21 = zero half_row1 half_col1 in
-                let a22 = zero half_row1 half_col1 in
-                let b11 = zero half_row2 half_col2 in
-                let b12 = zero half_row2 half_col2 in
-                let b21 = zero half_row2 half_col2 in
-                let b22 = zero half_row2 half_col2 in
+                let a11 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let a12 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let a21 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let a22 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let b11 = zero ~dimx:half_row2 ~dimy:half_col2 in
+                let b12 = zero ~dimx:half_row2 ~dimy:half_col2 in
+                let b21 = zero ~dimx:half_row2 ~dimy:half_col2 in
+                let b22 = zero ~dimx:half_row2 ~dimy:half_col2 in
 
                 (* Split matrix 1 *)
                 let _ = split matrix1 a11 0 0 in 
@@ -362,7 +378,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             let m2_padded = pad m2 in
             let result_padded = mul_invariant m1_padded m2_padded in
             if dim m1 = dim m1_padded && dim m2 = dim m2_padded then result_padded
-            else let result = zero (Array.length m1) (Array.length m2.(0)) in
+            else let result = zero ~dimx:(Array.length m1) ~dimy:(Array.length m2.(0)) in
             let _ = split result_padded result 0 0 in
             result;;
 
@@ -373,9 +389,28 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
     end
 
-(* LU & GAUSSIAN TESTING *)
+(* 
+  - Checks for floating point impercision
+  - Invariant is same dimensions
+*)
+
+let is_equal m1 m2 =
+  let epsilon = 0.001 in
+  Array.for_all2_exn m1 m2 ~f:(fun row1 row2 -> Array.for_all2_exn row1 row2 ~f:(fun v1 v2 -> (Float.abs (v1 -. v2)) <= epsilon))
+
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
+
+(* Test of_array invariant *)
+
+(* 
+  This will raise an exception: 
+  let bad_matrix = [|[|8.; 2.; 9.;0.|]; [|4.; 9.; 4.|]; [|6.; 7.; 9.|]|];;
+  assert (FloatMatrix.of_array bad_matrix = FloatMatrix.of_array bad_matrix)
+
+*)
+
+(* LU & GAUSSIAN TESTING *)
 
 let matrix1 = [|[|4.; 3.|]; [|6.; 3.|]|];;
 assert (FloatMatrix.det (FloatMatrix.of_array matrix1) = -6.);;
@@ -392,39 +427,67 @@ let (u3, l3, p3) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix3);;
 assert (FloatMatrix.to_array u1 = [|[|6.; 3.|]; [|0.; 1.|]|]);;
 assert (FloatMatrix.to_array l1 = [|[|1.; 0.|]; [|(2./.3.); 1.|]|]);;
 assert (FloatMatrix.to_array u2 =
-	  [|[|8.; 2.; 9.|]; [|0.; 8.; -0.5|]; [|0.; 0.; 2.59375|]|]);;
+      [|[|8.; 2.; 9.|]; [|0.; 8.; -0.5|]; [|0.; 0.; 2.59375|]|]);;
 assert (FloatMatrix.to_array l2 = 
-	  [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
+      [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|0.75; 0.6875; 1.|]|]);;
 assert (FloatMatrix.to_array u3 = matrix3);;
 assert (FloatMatrix.to_array l3 = matrix3);;
-assert (FloatMatrix.to_array (FloatMatrix.mul l1 u1) = FloatMatrix.to_array (FloatMatrix.mul p1 (FloatMatrix.of_array matrix1)));;
-assert (FloatMatrix.to_array (FloatMatrix.mul l2 u2) = FloatMatrix.to_array (FloatMatrix.mul p2 (FloatMatrix.of_array matrix2)));;
 
-let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) (Array.create 2 1.);;
-assert (sol1 = [|1.; 1.|]);;
+
+assert (is_equal (FloatMatrix.to_array (FloatMatrix.mul l1 u1)) (FloatMatrix.to_array (FloatMatrix.mul p1 (FloatMatrix.of_array matrix1))));;
+assert (is_equal (FloatMatrix.to_array (FloatMatrix.mul l2 u2)) (FloatMatrix.to_array (FloatMatrix.mul p2 (FloatMatrix.of_array matrix2))));;
+
+
+let (m1, sol1) = FloatMatrix.solve (FloatMatrix.of_array matrix3) 
+                                    (FloatMatrix.of_array ([|
+                                                          [|1.|];
+                                                          [|1.|]; 
+                                                          |]));;
+assert (FloatMatrix.to_array sol1 = 
+                                    [|
+                                    [|1.|];
+                                    [|1.|]; 
+                                    |]);;
+
+
 
 let matrix4 = [|[|0.; 1.; 1.|]; [|2.; 4.; -2.;|]; [|0.; 3.; 15.|]|];;
-let (m4, sol4) = FloatMatrix.solve
-		   (FloatMatrix.of_array matrix4) ([|4.; 2.; 36.|]);;
-assert (sol4 = [|-1.; 2.; 2.|]);;
+let (m4, sol4) = FloatMatrix.solve (FloatMatrix.of_array matrix4) 
+                                    (FloatMatrix.of_array  ([|
+                                                          [|4.|];
+                                                          [|2.|]; 
+                                                          [|36.|];
+                                                          |]));;
+assert (FloatMatrix.to_array sol4 = 
+                                    [|
+                                    [|-1.|];
+                                    [|2.|]; 
+                                    [|2.|];
+                                    |]);;
+
 
 let matrix5 = [|[|10.; -7.; 0.|]; [|-3.; 2.; 6.|]; [|5.; -1.; 5.|]|];;
 let (u5, l5, p5) = FloatMatrix.lu_decomp (FloatMatrix.of_array matrix5);;
-assert (FloatMatrix.to_array u5 =
-	  [|[|10.; -7.; 0.|]; [|0.; 2.5; 5.|]; [|0.; 0.; 6.2|]|]);;
-assert (FloatMatrix.to_array l5 = 
-	  [|[|1.; 0.; 0.|]; [|0.5; 1.; 0.|]; [|-0.3; -0.04; 1.|]|]);;
+assert (is_equal (FloatMatrix.to_array u5)
+      [|[|10.; -7.; 0.|]; [|0.; -0.1; 6.|]; [|0.; 0.; 155.|]|]);;
+assert (is_equal (FloatMatrix.to_array l5) 
+      [|[|1.; 0.; 0.|]; [|-0.3; 1.; 0.|]; [|0.5; -25.; 1.|]|]);;
 assert (FloatMatrix.to_array p5 = 
-	  [|[|1.; 0.; 0.|]; [|0.; 0.; 1.|]; [|0.; 1.; 0.|]|]);;
+      [|[|1.; 0.; 0.|]; [|0.; 0.; 1.|]; [|0.; 1.; 0.|]|]);; 
+
 
 (* STRASSEN TESTING *)
 
 (* Test FloatRing *)
 
-module FloatMatrix = MatrixFunctor (FloatRing);;
-let matrix1f = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
-let matrix2f = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
-FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f);;
+let matrix1f = FloatMatrix.of_array (Array.make_matrix ~dimx:5 ~dimy:3 2.);;
+let matrix2f = FloatMatrix.of_array (Array.make_matrix ~dimx:3 ~dimy:5 3.);;
+assert (FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f) = 
+        [|[|18.; 18.; 18.; 18.; 18.|]; 
+        [|18.; 18.; 18.; 18.; 18.|];
+        [|18.; 18.; 18.; 18.; 18.|]; 
+        [|18.; 18.; 18.; 18.; 18.|];
+        [|18.; 18.; 18.; 18.; 18.|]|]);;
 
 let matrix3f = FloatMatrix.of_array 
 [|
@@ -443,14 +506,25 @@ let matrix4f = FloatMatrix.of_array
 [|-5.; -6.; -7.; -8.; -9.|]; 
 |];;
 
-FloatMatrix.to_array (FloatMatrix.mul matrix3f matrix4f);;
+assert (FloatMatrix.to_array (FloatMatrix.mul matrix3f matrix4f) = 
+        [|[|-12.; -16.; -20.; -24.; -28.|]; 
+        [|-12.; -16.; -20.; -24.; -28.|];
+        [|12.; 16.; 20.; 24.; 28.|]; 
+        [|12.; 16.; 20.; 24.; 28.|];
+        [|-12.; -16.; -20.; -24.; -28.|]|]);;
 
 (* Test IntRing *)
 
 module IntMatrix = MatrixFunctor (IntRing);;
-let matrix1i = IntMatrix.of_array (Array.make_matrix 5 3 2);;
-let matrix2i = IntMatrix.of_array (Array.make_matrix 3 5 3);;
-IntMatrix.to_array (IntMatrix.mul matrix1i matrix2i);;
+let matrix1i = IntMatrix.of_array (Array.make_matrix ~dimx:5 ~dimy:3 2);;
+let matrix2i = IntMatrix.of_array (Array.make_matrix ~dimx:3 ~dimy:5 3);;
+
+assert (IntMatrix.to_array (IntMatrix.mul matrix1i matrix2i) = 
+        [|[|18; 18; 18; 18; 18|]; 
+        [|18; 18; 18; 18; 18|]; 
+        [|18; 18; 18; 18; 18|];
+        [|18; 18; 18; 18; 18|]; 
+        [|18; 18; 18; 18; 18|]|]);;
 
 let matrix3i = IntMatrix.of_array 
 [|
@@ -469,6 +543,9 @@ let matrix4i = IntMatrix.of_array
 [|-5; -6; -7; -8; -9|]; 
 |];;
 
-IntMatrix.to_array (IntMatrix.mul matrix3i matrix4i);;
-
-
+assert (IntMatrix.to_array (IntMatrix.mul matrix3i matrix4i) = 
+        [|[|-12; -16; -20; -24; -28|]; 
+        [|-12; -16; -20; -24; -28|];
+        [|12; 16; 20; 24; 28|]; 
+        [|12; 16; 20; 24; 28|];
+        [|-12; -16; -20; -24; -28|]|]);;
