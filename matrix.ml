@@ -314,6 +314,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             let m1_padded = pad m1 in
             let m2_padded = pad m2 in
             let result_padded = mul_invariant m1_padded m2_padded in
+            (* This case occurs if padding was unncessary *)
             if dim m1 = dim m1_padded && dim m2 = dim m2_padded then result_padded
             else let result = zero ~dimx:(Array.length m1) ~dimy:(Array.length m2.(0)) in
             let _ = split result_padded result 0 0 in
