@@ -325,7 +325,3 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             else raise IncompatibleDimensions
 
     end
-
-
-
-
