@@ -59,29 +59,15 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         (* Multiply every element in a matrix by a scalar *)
         let scalar value m1 =
-            let row, col = dim m1 in
-            let result = zero ~dimx:row ~dimy:col in
-                for i = 0 to row - 1 do
-                    for j = 0 to col - 1 do
-                        result.(i).(j) <- M.mul m1.(i).(j) value
-                    done;
-                done;
-            result;;
+            Array.map m1 ~f:(fun row1 -> Array.map row1 ~f:(fun v1 -> M.mul v1 value))
 
         (* 
             Do a certain operation to every corresponding element of two matrices.
             Both 'add' and 'sub' below use this method.
          *)
         let do_operation m1 m2 operation = 
-            let row, col = dim m1 in
-            if (row, col) = dim m2 then
-                (let result = zero ~dimx:row ~dimy:col in
-                for i = 0 to row - 1 do
-                    for j = 0 to col - 1 do
-                        result.(i).(j) <- operation m1.(i).(j) m2.(i).(j)
-                    done;
-                done;
-                result)
+            if dim m1 = dim m2 then
+                Array.map2_exn m1 m2 ~f:(fun row1 row2 -> Array.map2_exn row1 row2 ~f:operation)
             else raise IncompatibleDimensions;;
 
         let add m1 m2 =
