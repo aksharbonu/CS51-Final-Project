@@ -118,8 +118,13 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             if row <> col then raise IncompatibleDimensions
             else
                 let lower = identity row in
-                let upper = m in
                 let pivot_mat = identity row in
+                (* Create a copy of the matrix passed in to not alter the original values *)
+                let upper = zero row row in
+                for i = 0 to row do
+                    upper.(i) <- Array.copy m.(i);
+                done;
+
            
             (* Find the largest value in a row (the pivot row) for the kth column *)
             for k = 0 to row - 1 do
