@@ -62,7 +62,12 @@ assert (FloatMatrix.to_array sol1 =
                                     [|1.|]; 
                                     |]);;
 
+(* Raises exception because matrix1b is not invertible - not solvable system
 
+let matrix1b = [|[|4.; 2.|]; [|6.; 3.|]|];;
+assert (FloatMatrix.solve (FloatMatrix.of_array matrix1) sol1 = (m1, sol1));;
+
+*) 
 
 let matrix4 = [|[|0.; 1.; 1.|]; [|2.; 4.; -2.;|]; [|0.; 3.; 15.|]|];;
 let (m4, sol4) = FloatMatrix.solve (FloatMatrix.of_array matrix4) 
