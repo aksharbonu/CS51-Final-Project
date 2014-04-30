@@ -121,7 +121,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 let pivot_mat = identity row in
                 (* Create a copy of the matrix passed in to not alter the original values *)
                 let upper = zero row row in
-                for i = 0 to row do
+                for i = 0 to row - 1 do
                     upper.(i) <- Array.copy m.(i);
                 done;
 
