@@ -164,7 +164,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                matrices might not yield a solution *)
             if length <> row || row <> col then raise IncompatibleDimensions
             else
-            if M.abs_val (det m) <= M.epsilon then 
+            if M.comp (det m) M.zero = Equal then 
               raise (failwith "not an invertible matrix - might not have a solution")
             else
             
