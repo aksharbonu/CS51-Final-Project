@@ -472,9 +472,9 @@ assert (is_equal (FloatMatrix.to_array u5)
       [|[|10.; -7.; 0.|]; [|0.; -0.1; 6.|]; [|0.; 0.; 155.|]|]);;
 assert (is_equal (FloatMatrix.to_array l5) 
       [|[|1.; 0.; 0.|]; [|-0.3; 1.; 0.|]; [|0.5; -25.; 1.|]|]);;
-assert (FloatMatrix.to_array p5 = 
-      [|[|1.; 0.; 0.|]; [|0.; 0.; 1.|]; [|0.; 1.; 0.|]|]);; 
-
+assert (is_equal (FloatMatrix.to_array p5)
+      [|[|1.; 0.; 0.|]; [|0.; 1.; 0.|]; [|0.; 0.; 1.|]|]);; 
+assert (is_equal (FloatMatrix.to_array (FloatMatrix.mul l5 u5)) (FloatMatrix.to_array (FloatMatrix.mul p5 (FloatMatrix.of_array matrix5))));;
 
 (* STRASSEN TESTING *)
 
