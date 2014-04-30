@@ -1,3 +1,7 @@
+open Core.Std
+
+type comparison = Less | Equal | Greater;;
+
 module type RING =
     sig
         type t

@@ -1,3 +1,6 @@
+open Ring
+open Matrix 
+
 (* LU & GAUSSIAN TESTING *)
 
 module FloatMatrix = MatrixFunctor (FloatRing);;
@@ -46,7 +49,6 @@ assert (FloatMatrix.to_array p5 =
 
 (* Test FloatRing *)
 
-module FloatMatrix = MatrixFunctor (FloatRing);;
 let matrix1f = FloatMatrix.of_array (Array.make_matrix 5 3 2.);;
 let matrix2f = FloatMatrix.of_array (Array.make_matrix 3 5 3.);;
 FloatMatrix.to_array (FloatMatrix.mul matrix1f matrix2f);;

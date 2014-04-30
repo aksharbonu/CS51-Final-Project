@@ -1,8 +1,5 @@
 open Core.Std
 open Ring
-open Test
-
-type comparison = Less | Equal | Greater;;
 
 module type MATRIX =
 sig
