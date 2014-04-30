@@ -42,6 +42,7 @@ module FloatRing =
         let mul = ( *. )
         let div = (/.)
         let abs_val v = Float.abs v
+        (* Floating point equality uses an epsilon *)
         let comp v1 v2 = if abs_val (v1 -. v2) <= 0.0001 then Equal else if v1 < v2 then Less
              else Greater
         let print_elt s = print_endline (Float.to_string s)
