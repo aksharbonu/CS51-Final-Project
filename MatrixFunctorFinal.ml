@@ -274,6 +274,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 done;
              done; child;;
 
+        (* Follows the invariant that the matrix has an even number of rows & columns *)
         let rec mul_invariant matrix1 matrix2 =
             (* Saves rows & columns of matrices for future use*)
             let row1, col1 = dim matrix1 in
