@@ -213,12 +213,8 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         (* Adds the child matrix to the parent matrix starting at index (row, col) *)
         let join parent child row col =  
-            let row_child, col_child = dim child in
-            for i = 0 to row_child - 1 do
-                for j = 0 to col_child - 1 do
-                    parent.(i + row).(j + col) <- child.(i).(j) 
-                done;
-             done; parent;;
+            Array.iteri child ~f:(fun i r -> Array.iteri r ~f:(fun j v -> parent.(i+row).(j+col) <- v));
+            parent;;
 
         (* Checks if dimensions are both 1 (base case) or odd dimensions and makes even *)
         let pad m1 = 
@@ -233,12 +229,8 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         (* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
         let split parent child row col =
-            let row_child, col_child = dim child in 
-            for i = 0 to row_child - 1 do
-                for j = 0 to col_child - 1 do
-                    child.(i).(j) <- parent.(i + row).(j + col)
-                done;
-             done; child;;
+            Array.iteri child ~f:(fun i r -> Array.iteri r ~f:(fun j _ -> child.(i).(j) <- parent.(i+row).(j+col)));
+            child;;
 
         (* Follows the invariant that the matrix has an even number of rows & columns *)
         let rec mul_invariant matrix1 matrix2 =
