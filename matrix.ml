@@ -8,7 +8,7 @@ sig
     type t
     val of_array: elt array array -> t
     val to_array: t -> elt array array
-    val zero : int -> int -> t
+    val zero : dimx: int -> dimy: int -> t
     val identity : int -> t
     val add : t -> t -> t
     val sub : t -> t -> t
@@ -32,10 +32,10 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         let to_array = ident;;
 
-        let zero n m = Array.make_matrix n m M.zero;;
+        let zero ~dimx:n ~dimy:m = Array.make_matrix ~dimx:n ~dimy:m M.zero;;
 
         let identity n =
-            let result = zero n n in
+            let result = zero ~dimx:n ~dimy:n in
             for i = 0 to n - 1 do
                 result.(i).(i) <- M.one
             done;
@@ -45,7 +45,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
         let scalar value m1 =
             let row, col = dim m1 in
-            let result = zero row col in
+            let result = zero ~dimx:row ~dimy:col in
                 for i = 0 to row - 1 do
                     for j = 0 to col - 1 do
                         result.(i).(j) <- M.mul m1.(i).(j) value
@@ -57,7 +57,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
         let do_operation m1 m2 operation = 
             let row, col = dim m1 in
             if (row, col) = dim m2 then
-                (let result = zero row col in
+                (let result = zero ~dimx:row ~dimy:col in
                 for i = 0 to row - 1 do
                     for j = 0 to col - 1 do
                         result.(i).(j) <- operation m1.(i).(j) m2.(i).(j)
@@ -93,7 +93,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 else 
                     let determinant = ref M.zero in
                     for i = 0 to row - 1 do
-                        let next_mat = zero (row - 1) (row - 1) in
+                        let next_mat = zero ~dimx:(row - 1) ~dimy:(row - 1) in
                         for j = 1 to row - 1 do
                             for k = 0 to row - 1 do
                                 if k < i then next_mat.(j-1).(k) <- m.(j).(k)
@@ -120,7 +120,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
                 let lower = identity row in
                 let pivot_mat = identity row in
                 (* Create a copy of the matrix passed in to not alter the original values *)
-                let upper = zero row row in
+                let upper = zero ~dimx:row ~dimy:row in
                 for i = 0 to row - 1 do
                     upper.(i) <- Array.copy m.(i);
                 done;
@@ -217,9 +217,9 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             else 
             (match row mod 2 = 0, col mod 2 = 0 with
             | true, true -> m1
-            | true, false -> join (zero row (col + 1)) m1 0 0 
-            | false, true -> join (zero (row + 1) col) m1 0 0
-            | _, _ ->  join (zero (row + 1) (col + 1)) m1 0 0);;
+            | true, false -> join (zero ~dimx:row ~dimy:(col + 1)) m1 0 0 
+            | false, true -> join (zero ~dimx:(row + 1) ~dimy:col) m1 0 0
+            | _, _ ->  join (zero ~dimx:(row + 1) ~dimy:(col + 1)) m1 0 0);;
 
         (* Adds the parent matrix to the child matrix starting at index (row, col) till child is full *)
         let split parent child row col =
@@ -235,7 +235,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             (* Saves rows & columns of matrices for future use*)
             let row1, col1 = dim matrix1 in
             let row2, col2 = dim matrix2 in
-            let result = zero row1 row1 in
+            let result = zero ~dimx:row1 ~dimy:row1 in
             if row1 = 1 then 
                 (result.(0).(0) <- M.mul matrix1.(0).(0) matrix2.(0).(0); result)
             else
@@ -246,14 +246,14 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
 
                 (* Create halves *)
 
-                let a11 = zero half_row1 half_col1 in
-                let a12 = zero half_row1 half_col1 in
-                let a21 = zero half_row1 half_col1 in
-                let a22 = zero half_row1 half_col1 in
-                let b11 = zero half_row2 half_col2 in
-                let b12 = zero half_row2 half_col2 in
-                let b21 = zero half_row2 half_col2 in
-                let b22 = zero half_row2 half_col2 in
+                let a11 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let a12 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let a21 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let a22 = zero ~dimx:half_row1 ~dimy:half_col1 in
+                let b11 = zero ~dimx:half_row2 ~dimy:half_col2 in
+                let b12 = zero ~dimx:half_row2 ~dimy:half_col2 in
+                let b21 = zero ~dimx:half_row2 ~dimy:half_col2 in
+                let b22 = zero ~dimx:half_row2 ~dimy:half_col2 in
 
                 (* Split matrix 1 *)
                 let _ = split matrix1 a11 0 0 in 
@@ -313,7 +313,7 @@ module MatrixFunctor (M : RING) : MATRIX with type elt = M.t =
             let m2_padded = pad m2 in
             let result_padded = mul_invariant m1_padded m2_padded in
             if dim m1 = dim m1_padded && dim m2 = dim m2_padded then result_padded
-            else let result = zero (Array.length m1) (Array.length m2.(0)) in
+            else let result = zero ~dimx:(Array.length m1) ~dimy:(Array.length m2.(0)) in
             let _ = split result_padded result 0 0 in
             result;;
 
